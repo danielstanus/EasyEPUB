@@ -8,6 +8,7 @@ import {
 } from '@flow/reader/hooks'
 import { useReaderSnapshot } from '@flow/reader/models'
 
+import { generateHeatmapGrid } from '../../utils/heatmap'
 import { PaneViewProps } from '../base'
 
 export const TimelineView: React.FC<PaneViewProps> = () => {
@@ -65,38 +66,12 @@ export const TimelineView: React.FC<PaneViewProps> = () => {
     return data
   }, [stats.sessions])
 
-  // Calculate grid position for each day
-  const heatmapGrid = useMemo(() => {
-    const today = dayjs()
-    const grid: Array<{
-      date: string
-      col: number
-      row: number
-      intensity: number
-    }> = []
-
-    for (let i = 0; i < 84; i++) {
-      const date = today.subtract(83 - i, 'day')
-      const dayOfWeek = date.day() // 0 = Sunday
-      const weekIndex = Math.floor(i / 7)
-
-      const minutes = heatmapData[date.format('YYYY-MM-DD')] || 0
-      let intensity = 0
-      if (minutes > 0 && minutes <= 15) intensity = 1
-      else if (minutes > 15 && minutes <= 30) intensity = 2
-      else if (minutes > 30 && minutes <= 60) intensity = 3
-      else if (minutes > 60) intensity = 4
-
-      grid.push({
-        date: date.format('YYYY-MM-DD'),
-        col: weekIndex + 2, // +2 because column 1 is the day labels
-        row: dayOfWeek + 1, // +1 for 1-indexed grid
-        intensity,
-      })
-    }
-
-    return grid
-  }, [heatmapData])
+  // Calculate grid and labels using verified utility
+  const {
+    grid: heatmapGrid,
+    numberOfWeeks,
+    monthLabels,
+  } = useMemo(() => generateHeatmapGrid(heatmapData), [heatmapData])
 
   const getIntensityClass = (intensity: number) => {
     switch (intensity) {
@@ -233,46 +208,41 @@ export const TimelineView: React.FC<PaneViewProps> = () => {
               </div>
             </div>
             <div className="flex flex-col gap-2">
-              {/* Month labels */}
-              <div className="grid grid-cols-[1.5rem_repeat(12,1fr)] gap-1 text-center text-[10px] text-gray-500 dark:text-gray-400">
+              {/* Month labels row */}
+              <div
+                className="grid gap-0.5 text-center text-[10px] text-gray-500 dark:text-gray-400"
+                style={{
+                  gridTemplateColumns: `1.5rem repeat(${numberOfWeeks}, 1fr)`,
+                }}
+              >
                 <div></div>
-                <span>J</span>
-                <span>F</span>
-                <span>M</span>
-                <span>A</span>
-                <span>M</span>
-                <span>J</span>
-                <span>J</span>
-                <span>A</span>
-                <span>S</span>
-                <span>O</span>
-                <span>N</span>
-                <span>D</span>
+                {monthLabels.map((label, idx) => (
+                  <span
+                    key={idx}
+                    style={{ gridColumn: label.col + 1 }}
+                    className="text-left"
+                  >
+                    {label.month}
+                  </span>
+                ))}
               </div>
-              {/* Heatmap grid */}
-              <div className="grid-rows-7 grid grid-cols-[1.5rem_repeat(12,1fr)] gap-0.5">
-                {/* Day labels */}
-                <span className="self-center text-right text-[10px] text-gray-500 dark:text-gray-400">
-                  S
-                </span>
-                <span className="self-center text-right text-[10px] text-gray-500 dark:text-gray-400">
-                  M
-                </span>
-                <span className="self-center text-right text-[10px] text-gray-500 dark:text-gray-400">
-                  T
-                </span>
-                <span className="self-center text-right text-[10px] text-gray-500 dark:text-gray-400">
-                  W
-                </span>
-                <span className="self-center text-right text-[10px] text-gray-500 dark:text-gray-400">
-                  T
-                </span>
-                <span className="self-center text-right text-[10px] text-gray-500 dark:text-gray-400">
-                  F
-                </span>
-                <span className="self-center text-right text-[10px] text-gray-500 dark:text-gray-400">
-                  S
-                </span>
+              {/* Heatmap grid with day labels */}
+              <div
+                className="grid-rows-7 grid gap-0.5"
+                style={{
+                  gridTemplateColumns: `1.5rem repeat(${numberOfWeeks}, 1fr)`,
+                }}
+              >
+                {/* Day labels in first column */}
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
+                  <span
+                    key={day + idx}
+                    className="self-center pr-1 text-right text-[10px] text-gray-500 dark:text-gray-400"
+                    style={{ gridColumn: 1, gridRow: idx + 1 }}
+                  >
+                    {day}
+                  </span>
+                ))}
                 {/* Heatmap cells */}
                 {heatmapGrid.map((cell) => (
                   <div
@@ -280,7 +250,7 @@ export const TimelineView: React.FC<PaneViewProps> = () => {
                     className={`size-2.5 rounded-sm ${getIntensityClass(
                       cell.intensity,
                     )}`}
-                    style={{ gridColumn: cell.col, gridRow: cell.row }}
+                    style={{ gridColumn: cell.col + 1, gridRow: cell.row }}
                     title={`${cell.date}: ${heatmapData[cell.date] || 0} min`}
                   ></div>
                 ))}

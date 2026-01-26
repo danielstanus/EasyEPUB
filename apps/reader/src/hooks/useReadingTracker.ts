@@ -48,7 +48,7 @@ function saveStats(stats: ReadingStats) {
   }
 }
 
-function calculateStreak(lastReadDate: string, today: string): number {
+export function calculateStreak(lastReadDate: string, today: string): number {
   if (!lastReadDate) return 0
 
   const last = new Date(lastReadDate)
@@ -77,6 +77,20 @@ export function useReadingTracker() {
   const lastPageTimestamp = useRef<number>(0)
   const lastPercentage = useRef<number>(0)
   const qualifiedPagesRead = useRef<number>(0)
+
+  // On mount, recalculate streak if user hasn't read in 2+ days
+  useEffect(() => {
+    const stored = loadStats()
+    const today = getTodayDate()
+    const streakChange = calculateStreak(stored.lastReadDate, today)
+
+    // If more than 1 day has passed, reset streak to 0
+    if (streakChange === 0 && stored.currentStreak !== 0) {
+      stored.currentStreak = 0
+      saveStats(stored)
+      setStats(stored)
+    }
+  }, [])
 
   // Initialize session when book opens
   useEffect(() => {
