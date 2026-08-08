@@ -1,5 +1,6 @@
 const localeMap = {
   'en-US': 'English',
+  'es-ES': 'Español',
   'zh-CN': '简体中文',
   'ja-JP': '日本語',
 }

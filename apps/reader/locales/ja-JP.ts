@@ -17,6 +17,7 @@ export default {
 
   'search.title': '検索',
   'search.files.result': '{m}件中 {n}件該当',
+  'search.no_results': '結果なし',
 
   'annotation.title': '注釈',
   'annotation.definitions': '定義',
@@ -34,6 +35,7 @@ export default {
   'typography.page_view.single_page': '片ページ',
   'typography.page_view.double_page': '見開きページ',
   'typography.font_family': 'フォントファミリー',
+  'typography.default': 'デフォルト',
   'typography.font_size': 'フォントサイズ',
   'typography.font_weight': 'フォントウェイト',
   'typography.line_height': '行の高さ',

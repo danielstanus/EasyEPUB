@@ -17,6 +17,7 @@ export default {
 
   'search.title': '搜索',
   'search.files.result': '{n} 个结果在 {m} 个文件中',
+  'search.no_results': '无结果',
 
   'annotation.title': '标注',
   'annotation.definitions': '定义',
@@ -34,6 +35,7 @@ export default {
   'typography.page_view.single_page': '单页',
   'typography.page_view.double_page': '双页',
   'typography.font_family': '字体',
+  'typography.default': '默认',
   'typography.font_size': '字号',
   'typography.font_weight': '字重',
   'typography.line_height': '行高',

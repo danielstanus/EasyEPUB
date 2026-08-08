@@ -1,0 +1,80 @@
+{
+  "desc": "Flow es un lector de EPUB online gratuito, compatible con todas las plataformas (Web, Windows, Linux, MacOS, Android, iOS). Lee varios libros a la vez. Lee sin interrupciones entre distintos dispositivos.",
+  "page": {
+    "home": {
+      "title": "Flow - Lector de EPUB online"
+    },
+    "faq": {
+      "title": "Preguntas frecuentes"
+    }
+  },
+
+  "open_app": "Abrir la app",
+  "terms": "Términos",
+  "privacy": "Privacidad",
+  "contact": "Contacto",
+  "feedback": "Comentarios",
+  "faq": "Preguntas frecuentes",
+  "roadmap": "Hoja de ruta",
+  "donate": "Donar",
+  "donate_url": "https://ko-fi.com/pacexy",
+
+  "redefine": "Redefine",
+  "reader": "lector",
+  "description": "Gratuito. Código abierto. En el navegador.",
+  "features": {
+    "title": "Características",
+    "list": {
+      "0": "Búsqueda en el libro",
+      "1": "Vista previa de imágenes",
+      "2": "Tipografía personalizada",
+      "3": "Subrayado y anotaciones",
+      "4": "Tema",
+      "5": "Compartir/descargar libros con un enlace",
+      "6": "Exportación de datos",
+      "7": "Almacenamiento en la nube"
+    }
+  },
+  "feature": {
+    "0": {
+      "title": "Aplicación web progresiva",
+      "desc": "Flow es una aplicación web progresiva (PWA), lo que significa que es multiplataforma e instalable."
+    },
+    "1": {
+      "title": "Primero sin conexión",
+      "desc": "Flow puede ejecutarse sin conexión (tras la instalación) y, cuando hay conexión, Flow se actualiza automáticamente."
+    },
+    "2": {
+      "title": "Diseño de cuadrícula",
+      "desc": "Flow admite el diseño de cuadrícula (horizontal), que te permite leer varios libros a la vez."
+    },
+    "3": {
+      "title": "Almacenamiento en la nube personalizado",
+      "desc": "Guarda tus libros, notas, progreso de lectura e incluso otros datos en la nube que tú elijas."
+    }
+  },
+
+  "frequently_asked_questions": "Preguntas frecuentes",
+  "qa2": {
+    "0": {
+      "q": "¿Cómo instalo o desinstalo Flow?",
+      "a": "Google Chrome: <a target='_blank' href='https://support.google.com/chrome/answer/9658361?hl=es'>Usar aplicaciones web progresivas</a><br/>Microsoft Edge: <a target='_blank' href='https://learn.microsoft.com/es-es/microsoft-edge/progressive-web-apps-chromium/ux'>La experiencia de usuario de las PWA</a><br/>Safari: <a target='_blank' href='https://support.apple.com/es-es/104996'>Usar aplicaciones web de Safari en Mac</a>"
+    },
+    "1": {
+      "q": "¿Cómo configuro Flow como lector de ePub predeterminado?",
+      "a": "Google Chrome: <a target='_blank' href='https://pacexy.notion.site/How-to-set-Flow-as-the-default-ePub-reader-35e44bd24aef4d63a3c55f054929f064'>¿Cómo configurar Flow como lector de ePub predeterminado?</a><br/>"
+    },
+    "2": {
+      "q": "¿Dónde se almacenan mis datos?",
+      "a": "Tus datos se guardan localmente en tu navegador, usando <a target='_blank' href='https://developer.mozilla.org/es/docs/Web/API/IndexedDB_API'>IndexedDB</a>. Si subes un libro, habrá una copia remota en la nube."
+    },
+    "3": {
+      "q": "¿Cómo borro mis datos?",
+      "a": "Datos locales: borra la caché del navegador.<br/>Datos remotos: selecciona y elimina el libro que quieras borrar (esto también borrará el local)."
+    },
+    "4": {
+      "q": "¿Qué almacenamiento en la nube se admite?",
+      "a": "Solo Dropbox por ahora."
+    }
+  }
+}

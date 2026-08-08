@@ -1,6 +1,5 @@
 import clsx from 'clsx'
-import { useCallback, useRef, useState } from 'react'
-import { MdAdd, MdRemove } from 'react-icons/md'
+import { useCallback, useState } from 'react'
 
 import { RenditionSpread } from '@flow/epubjs/types/rendition'
 import { useTranslation } from '@flow/reader/hooks'
@@ -12,10 +11,26 @@ import {
 } from '@flow/reader/state'
 import { keys } from '@flow/reader/utils'
 
-import { Select, TextField, TextFieldProps } from '../Form'
+import { SearchableSelect, SearchableSelectOption } from '../Form'
 import { PaneViewProps, PaneView, Pane } from '../base'
 
-// Define an interface for the Font object
+// Fallback fonts shown when `queryLocalFonts` is unavailable
+// (e.g. non-Chromium browsers or before permission is granted)
+const FALLBACK_FONT_FAMILIES = [
+  'serif',
+  'sans-serif',
+  'monospace',
+  'Georgia, serif',
+  'Times New Roman, serif',
+  'Arial, Helvetica, sans-serif',
+  'Verdana, Geneva, sans-serif',
+  'Courier New, monospace',
+]
+
+const FONT_SIZES = [12, 14, 16, 18, 20, 22, 24, 26, 28]
+const FONT_WEIGHTS = [100, 200, 300, 400, 500, 600, 700, 800, 900]
+const LINE_HEIGHTS = [1, 1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.5, 3]
+const ZOOMS = [1, 1.1, 1.2, 1.3, 1.4, 1.5, 2]
 
 enum TypographyScope {
   Book,
@@ -76,6 +91,56 @@ export const TypographyView: React.FC<PaneViewProps> = (props) => {
     }
   }, [localFonts])
 
+  const fontOptions = localFonts?.length ? localFonts : FALLBACK_FONT_FAMILIES
+
+  const fontFamilyOptions: SearchableSelectOption[] = [
+    { value: '', label: t('default') },
+    ...(fontFamily && !fontOptions.includes(fontFamily)
+      ? [{ value: fontFamily, label: fontFamily }]
+      : []),
+    ...fontOptions.map((font) => ({ value: font, label: font })),
+  ]
+  const fontSizeOptions: SearchableSelectOption[] = [
+    { value: '', label: t('default') },
+    ...(fontSize && !FONT_SIZES.includes(parseInt(fontSize))
+      ? [{ value: fontSize, label: fontSize }]
+      : []),
+    ...FONT_SIZES.map((size) => ({
+      value: `${size}px`,
+      label: `${size}px`,
+    })),
+  ]
+  const fontWeightOptions: SearchableSelectOption[] = [
+    { value: '', label: t('default') },
+    ...(fontWeight && !FONT_WEIGHTS.includes(fontWeight)
+      ? [{ value: String(fontWeight), label: String(fontWeight) }]
+      : []),
+    ...FONT_WEIGHTS.map((weight) => ({
+      value: String(weight),
+      label: String(weight),
+    })),
+  ]
+  const lineHeightOptions: SearchableSelectOption[] = [
+    { value: '', label: t('default') },
+    ...(lineHeight && !LINE_HEIGHTS.includes(lineHeight)
+      ? [{ value: String(lineHeight), label: String(lineHeight) }]
+      : []),
+    ...LINE_HEIGHTS.map((lh) => ({
+      value: String(lh),
+      label: String(lh),
+    })),
+  ]
+  const zoomOptions: SearchableSelectOption[] = [
+    { value: '', label: t('default') },
+    ...(zoom && !ZOOMS.includes(zoom)
+      ? [{ value: String(zoom), label: String(zoom) }]
+      : []),
+    ...ZOOMS.map((z) => ({
+      value: String(z),
+      label: String(z),
+    })),
+  ]
+
   return (
     <PaneView {...props}>
       <div className="typescale-body-medium flex gap-2 px-5 pb-2 !text-[13px]">
@@ -100,124 +165,70 @@ export const TypographyView: React.FC<PaneViewProps> = (props) => {
         className="space-y-3 px-5 pt-2 pb-4"
         key={`${scope}${focusedBookTab?.id}`}
       >
-        <Select
+        <SearchableSelect
           name={t('page_view')}
           value={spread ?? RenditionSpread.Auto}
-          onChange={(e) => {
-            setTypography('spread', e.target.value as RenditionSpread)
+          options={[
+            {
+              value: RenditionSpread.None,
+              label: t('page_view.single_page'),
+            },
+            {
+              value: RenditionSpread.Auto,
+              label: t('page_view.double_page'),
+            },
+          ]}
+          onChange={(v) => {
+            setTypography('spread', v as RenditionSpread)
           }}
-        >
-          <option value={RenditionSpread.None}>
-            {t('page_view.single_page')}
-          </option>
-          <option value={RenditionSpread.Auto}>
-            {t('page_view.double_page')}
-          </option>
-        </Select>
-        <TextField
-          as="input"
+        />
+        <SearchableSelect
           name={t('font_family')}
-          value={fontFamily}
-          placeholder="default"
-          // Tips: Datalist only appears on mouse click or keyboard input.
-          // Does not show when focused via Tab/focus() or triggered by click()
-          datalist={localFonts?.map((font) => (
-            <option key={font} value={font}>
-              {font}
-            </option>
-          ))}
-          onFocus={queryLocalFonts}
-          // Preload fonts to ensure `localFonts` is available on first mouse click.
-          // Without preloading, datalist dropdown will be empty for the first mouse click.
-          onMouseEnter={queryLocalFonts}
-          onChange={(e) => {
-            setTypography('fontFamily', e.target.value)
+          value={fontFamily ?? ''}
+          options={fontFamilyOptions}
+          placeholder={t('default')}
+          onOpen={queryLocalFonts}
+          onChange={(v) => {
+            setTypography('fontFamily', v || undefined)
           }}
         />
-        <NumberField
+        <SearchableSelect
           name={t('font_size')}
-          min={14}
-          max={28}
-          defaultValue={fontSize && parseInt(fontSize)}
+          value={fontSize ?? ''}
+          options={fontSizeOptions}
+          placeholder={t('default')}
           onChange={(v) => {
-            setTypography('fontSize', v ? v + 'px' : undefined)
+            setTypography('fontSize', v || undefined)
           }}
         />
-        <NumberField
+        <SearchableSelect
           name={t('font_weight')}
-          min={100}
-          max={900}
-          step={100}
-          defaultValue={fontWeight}
+          value={fontWeight ? String(fontWeight) : ''}
+          options={fontWeightOptions}
+          placeholder={t('default')}
           onChange={(v) => {
-            setTypography('fontWeight', v || undefined)
+            setTypography('fontWeight', v ? Number(v) : undefined)
           }}
         />
-        <NumberField
+        <SearchableSelect
           name={t('line_height')}
-          min={1}
-          step={0.1}
-          defaultValue={lineHeight}
+          value={lineHeight ? String(lineHeight) : ''}
+          options={lineHeightOptions}
+          placeholder={t('default')}
           onChange={(v) => {
-            setTypography('lineHeight', v || undefined)
+            setTypography('lineHeight', v ? Number(v) : undefined)
           }}
         />
-        <NumberField
+        <SearchableSelect
           name={t('zoom')}
-          min={1}
-          step={0.1}
-          defaultValue={zoom}
+          value={zoom ? String(zoom) : ''}
+          options={zoomOptions}
+          placeholder={t('default')}
           onChange={(v) => {
-            setTypography('zoom', v || undefined)
+            setTypography('zoom', v ? Number(v) : undefined)
           }}
         />
       </Pane>
     </PaneView>
-  )
-}
-
-interface NumberFieldProps extends Omit<TextFieldProps<'input'>, 'onChange'> {
-  onChange: (v?: number) => void
-}
-const NumberField: React.FC<NumberFieldProps> = ({ onChange, ...props }) => {
-  const ref = useRef<HTMLInputElement>(null)
-  const t = useTranslation('action')
-
-  return (
-    <TextField
-      as="input"
-      type="number"
-      placeholder="default"
-      actions={[
-        {
-          title: t('step_down'),
-          Icon: MdRemove,
-          onClick: () => {
-            if (!ref.current) return
-            ref.current.stepDown()
-            onChange(Number(ref.current.value))
-          },
-        },
-        {
-          title: t('step_up'),
-          Icon: MdAdd,
-          onClick: () => {
-            if (!ref.current) return
-            ref.current.stepUp()
-            onChange(Number(ref.current.value))
-          },
-        },
-      ]}
-      mRef={ref}
-      // lazy render
-      onBlur={(e) => {
-        onChange(Number(e.target.value))
-      }}
-      onClear={() => {
-        if (ref.current) ref.current.value = ''
-        onChange(undefined)
-      }}
-      {...props}
-    />
   )
 }

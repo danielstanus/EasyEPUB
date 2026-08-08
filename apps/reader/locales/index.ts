@@ -2,6 +2,7 @@ import en_US from '../locales/en-US'
 import ja_JP from '../locales/ja-JP'
 import zh_CN from '../locales/zh-CN'
 import de_DE from '../locales/de-DE'
+import es_ES from '../locales/es-ES'
 
 // Locale display names
 export const localeNames: Record<string, string> = {
@@ -9,6 +10,7 @@ export const localeNames: Record<string, string> = {
   'zh-CN': '简体中文',
   'ja-JP': '日本語',
   'de-DE': 'Deutsch',
+  'es-ES': 'Español',
 }
 
 // eslint-disable-next-line import/no-anonymous-default-export
@@ -17,4 +19,5 @@ export default {
   'zh-CN': zh_CN,
   'ja-JP': ja_JP,
   'de-DE': de_DE,
+  'es-ES': es_ES,
 } as const

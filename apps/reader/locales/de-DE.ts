@@ -17,6 +17,7 @@ export default {
 
   'search.title': 'Suchen',
   'search.files.result': '{n} Ergebnisse in {m} Abschnitten',
+  'search.no_results': 'Keine Ergebnisse',
 
   'annotation.title': 'Anmerkung',
   'annotation.definitions': 'Definitionen',
@@ -34,6 +35,7 @@ export default {
   'typography.page_view.single_page': 'Einzelseite',
   'typography.page_view.double_page': 'Doppelseite',
   'typography.font_family': 'Schriftart',
+  'typography.default': 'Standard',
   'typography.font_size': 'Schriftgröße',
   'typography.font_weight': 'Schriftstärke',
   'typography.line_height': 'Zeilenhöhe',

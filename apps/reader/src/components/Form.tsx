@@ -3,11 +3,12 @@ import {
   ElementType,
   useRef,
   useEffect,
+  useState,
   RefObject,
   ComponentProps,
 } from 'react'
 import { IconType } from 'react-icons'
-import { MdCheck, MdClose } from 'react-icons/md'
+import { MdArrowDropDown, MdCheck, MdClose } from 'react-icons/md'
 import { PolymorphicPropsWithoutRef } from 'react-polymorphic-types'
 
 import { useMobile, useTranslation } from '../hooks'
@@ -149,6 +150,152 @@ export const Select: React.FC<SelectProps> = ({
         )}
         {...props}
       ></select>
+    </div>
+  )
+}
+
+export interface SearchableSelectOption {
+  value: string
+  label: string
+}
+interface SearchableSelectProps {
+  name?: string
+  value?: string
+  options: SearchableSelectOption[]
+  placeholder?: string
+  onChange?: (value: string) => void
+  onOpen?: () => void
+}
+/**
+ * A select with a searchable dropdown (React Select-like).
+ * The list expands in place so it is not clipped by scrollable panes.
+ */
+export const SearchableSelect: React.FC<SearchableSelectProps> = ({
+  name,
+  value,
+  options,
+  placeholder,
+  onChange,
+  onOpen,
+}) => {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const [active, setActive] = useState(0)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLUListElement>(null)
+  const t = useTranslation()
+
+  const filtered = query
+    ? options.filter((o) =>
+        o.label.toLowerCase().includes(query.toLowerCase()),
+      )
+    : options
+
+  // Close when clicking outside
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  // Keep the highlighted option in view when navigating with the keyboard
+  useEffect(() => {
+    if (!open) return
+    listRef.current?.children[active]?.scrollIntoView({ block: 'nearest' })
+  }, [active, open])
+
+  const selected = options.find((o) => o.value === value)
+
+  return (
+    <div ref={rootRef} className="flex flex-col">
+      {name && <Label name={name} />}
+      <button
+        type="button"
+        id={name}
+        name={name}
+        className={clsx(
+          'typescale-body-medium text-on-surface-variant bg-default flex max-w-xs items-center justify-between gap-2 px-1.5 py-1 !text-[13px]',
+        )}
+        aria-expanded={open}
+        onClick={() => {
+          if (!open) onOpen?.()
+          setOpen(!open)
+          setQuery('')
+          setActive(0)
+        }}
+      >
+        <span className="truncate">
+          {selected?.label ?? (value || placeholder)}
+        </span>
+        <MdArrowDropDown
+          className={clsx(
+            'text-outline shrink-0 transition-transform',
+            open && 'rotate-180',
+          )}
+        />
+      </button>
+      {open && (
+        <div className="bg-default mt-1 max-w-xs rounded-md p-1">
+          <input
+            className="typescale-body-medium text-on-surface-variant placeholder:text-outline/60 w-full rounded bg-transparent px-1.5 py-1 !text-[13px] outline-none"
+            autoFocus
+            value={query}
+            placeholder={t('search.title')}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              setActive(0)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setOpen(false)
+              } else if (e.key === 'ArrowDown') {
+                e.preventDefault()
+                setActive((a) =>
+                  filtered.length ? Math.min(a + 1, filtered.length - 1) : 0,
+                )
+              } else if (e.key === 'ArrowUp') {
+                e.preventDefault()
+                setActive((a) => Math.max(a - 1, 0))
+              } else if (e.key === 'Enter') {
+                const option = filtered[active]
+                if (option) {
+                  onChange?.(option.value)
+                  setOpen(false)
+                }
+              }
+            }}
+          />
+          <ul ref={listRef} role="listbox" className="max-h-52 overflow-y-auto">
+            {filtered.length === 0 ? (
+              <li className="typescale-body-medium text-outline/60 px-1.5 py-1 !text-[13px]">
+                {t('search.no_results')}
+              </li>
+            ) : (
+              filtered.map((o, i) => (
+                <li key={o.value}>
+                  <button
+                    type="button"
+                    className={clsx(
+                      'typescale-body-medium text-on-surface-variant w-full rounded px-1.5 py-1 text-left !text-[13px]',
+                      i === active && 'bg-outline/10',
+                    )}
+                    onMouseEnter={() => setActive(i)}
+                    onClick={() => {
+                      onChange?.(o.value)
+                      setOpen(false)
+                    }}
+                  >
+                    {o.label}
+                  </button>
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
+      )}
     </div>
   )
 }
