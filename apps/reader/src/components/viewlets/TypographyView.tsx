@@ -14,6 +14,16 @@ import { keys } from '@flow/reader/utils'
 import { SearchableSelect, SearchableSelectOption } from '../Form'
 import { PaneViewProps, PaneView, Pane } from '../base'
 
+// Fonts bundled with the app (self-hosted), always available
+const BUNDLED_FONT_FAMILIES = [
+  'Roboto',
+  'Roboto Serif',
+  'Literata',
+  'Newsreader',
+  'Source Serif 4',
+  'Atkinson Hyperlegible',
+]
+
 // Fallback fonts shown when `queryLocalFonts` is unavailable
 // (e.g. non-Chromium browsers or before permission is granted)
 const FALLBACK_FONT_FAMILIES = [
@@ -91,7 +101,12 @@ export const TypographyView: React.FC<PaneViewProps> = (props) => {
     }
   }, [localFonts])
 
-  const fontOptions = localFonts?.length ? localFonts : FALLBACK_FONT_FAMILIES
+  const fontOptions = Array.from(
+    new Set([
+      ...BUNDLED_FONT_FAMILIES,
+      ...(localFonts?.length ? localFonts : FALLBACK_FONT_FAMILIES),
+    ]),
+  )
 
   const fontFamilyOptions: SearchableSelectOption[] = [
     { value: '', label: t('default') },

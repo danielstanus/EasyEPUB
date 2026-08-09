@@ -54,6 +54,7 @@ export default {
   'settings.synchronization.title': 'Sincronización',
   'settings.synchronization.authorize': 'Autorizar',
   'settings.synchronization.unauthorize': 'Desautorizar',
+  'settings.synchronization.sync_now': 'Sincronizar ahora',
   'settings.cache': 'Caché',
   'settings.cache.clear': 'Vaciar',
   'settings.text_selection_menu': 'Menú de selección de texto',

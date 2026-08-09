@@ -6,8 +6,9 @@ import { parseCookies } from 'nookies'
 import { BookRecord, db } from './db'
 import { readBlob } from './file'
 
-export const mapToToken = {
+export const mapToToken: Record<string, string> = {
   dropbox: 'dropbox-refresh-token',
+  gdrive: 'gdrive-refresh-token',
 }
 
 export const OAUTH_SUCCESS_MESSAGE = 'oauth_success'
@@ -19,7 +20,8 @@ export const dbx = new Dropbox({
 let _req: Promise<void> | undefined
 dbx.auth.refreshAccessToken = () => {
   const cookies = parseCookies()
-  const refreshToken = cookies[mapToToken['dropbox']]
+  const tokenKey = mapToToken['dropbox'] ?? 'dropbox-refresh-token'
+  const refreshToken = cookies[tokenKey]
   if (!refreshToken) {
     // `reject` to skip subsequent api requests
     return Promise.reject()
@@ -46,7 +48,7 @@ interface SerializedBooks {
 const VERSION = 1
 export const DATA_FILENAME = 'data.json'
 
-function serializeData(books?: BookRecord[]) {
+export function serializeData(books?: BookRecord[]) {
   return JSON.stringify({
     version: VERSION,
     dbVersion: db?.verno,
@@ -54,7 +56,7 @@ function serializeData(books?: BookRecord[]) {
   })
 }
 
-function deserializeData(text: string) {
+export function deserializeData(text: string) {
   const { version, dbVersion, books } = JSON.parse(text) as SerializedBooks
 
   if (version < VERSION) {

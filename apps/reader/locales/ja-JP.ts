@@ -54,6 +54,7 @@ export default {
   'settings.synchronization.title': '同期',
   'settings.synchronization.authorize': '認証',
   'settings.synchronization.unauthorize': '認証解除',
+  'settings.synchronization.sync_now': '今すぐ同期',
   'settings.cache': 'キャッシュ',
   'settings.cache.clear': 'クリア',
   'settings.text_selection_menu': 'テキスト選択メニュー',

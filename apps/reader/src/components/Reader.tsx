@@ -31,7 +31,7 @@ import {
 } from '../hooks'
 import { BookTab, reader, useReaderSnapshot } from '../models'
 import { isTouchScreen } from '../platform'
-import { updateCustomStyle } from '../styles'
+import { injectFonts, updateCustomStyle } from '../styles'
 
 import {
   getClickedAnnotation,
@@ -242,6 +242,7 @@ function BookPane({ tab, onMouseDown }: BookPaneProps) {
 
   const applyCustomStyle = useCallback(() => {
     const contents = rendition?.getContents()[0]
+    injectFonts(contents)
     updateCustomStyle(contents, typography)
   }, [rendition, typography])
 

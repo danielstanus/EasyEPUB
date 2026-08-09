@@ -54,6 +54,7 @@ export default {
   'settings.synchronization.title': '同步',
   'settings.synchronization.authorize': '授权',
   'settings.synchronization.unauthorize': '取消授权',
+  'settings.synchronization.sync_now': '立即同步',
   'settings.cache': '缓存',
   'settings.cache.clear': '清除',
   'settings.text_selection_menu': '文本选择菜单',

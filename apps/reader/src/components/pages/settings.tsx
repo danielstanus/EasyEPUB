@@ -1,18 +1,21 @@
 import { useEventListener } from '@literal-ui/hooks'
 import Dexie from 'dexie'
 import { useRouter } from 'next/router'
-import { parseCookies, destroyCookie } from 'nookies'
+import { destroyCookie, parseCookies } from 'nookies'
+import { useState } from 'react'
 
+import { db } from '@flow/reader/db'
+import { getGoogleAuthUrl, uploadDataToGDrive } from '@flow/reader/gdrive'
 import {
   ColorScheme,
   useColorScheme,
   useForceRender,
   useTranslation,
 } from '@flow/reader/hooks'
-import { localeNames } from '../../../locales'
 import { useSettings } from '@flow/reader/state'
 import { dbx, mapToToken, OAUTH_SUCCESS_MESSAGE } from '@flow/reader/sync'
 
+import { localeNames } from '../../../locales'
 import { Button } from '../Button'
 import { Checkbox, Select } from '../Form'
 import { Page } from '../Page'
@@ -84,50 +87,84 @@ export const Settings: React.FC = () => {
 }
 
 const Synchronization: React.FC = () => {
+  const [provider, setProvider] = useState<'gdrive' | 'dropbox'>('gdrive')
   const cookies = parseCookies()
-  const refreshToken = cookies[mapToToken['dropbox']]
+  const tokenKey = mapToToken[provider] ?? ''
+  const refreshToken = cookies[tokenKey]
   const render = useForceRender()
   const t = useTranslation('settings.synchronization')
+  const [syncing, setSyncing] = useState(false)
 
   useEventListener('message', (e) => {
     if (e.data === OAUTH_SUCCESS_MESSAGE) {
-      // init app (generate access token, fetch remote data, etc.)
       window.location.reload()
     }
   })
 
+  const handleSyncGDrive = async () => {
+    try {
+      setSyncing(true)
+      const books = (await db?.books.toArray()) || []
+      await uploadDataToGDrive(books)
+      alert('Sincronización con Google Drive completada.')
+    } catch (e: any) {
+      console.error(e)
+      alert('Error al sincronizar con Google Drive: ' + (e?.message || e))
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   return (
     <Item title={t('title')}>
-      <Select>
+      <Select
+        value={provider}
+        onChange={(e) => setProvider(e.target.value as 'gdrive' | 'dropbox')}
+      >
+        <option value="gdrive">Google Drive</option>
         <option value="dropbox">Dropbox</option>
       </Select>
-      <div className="mt-2">
+      <div className="mt-2 space-x-2">
         {refreshToken ? (
-          <Button
-            variant="secondary"
-            onClick={() => {
-              destroyCookie(null, mapToToken['dropbox'])
-              render()
-            }}
-          >
-            {t('unauthorize')}
-          </Button>
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                destroyCookie(null, tokenKey)
+                render()
+              }}
+            >
+              {t('unauthorize')}
+            </Button>
+            {provider === 'gdrive' && (
+              <Button onClick={handleSyncGDrive} disabled={syncing}>
+                {syncing ? '...' : t('synchronization.sync_now')}
+              </Button>
+            )}
+          </>
         ) : (
           <Button
             onClick={() => {
-              const redirectUri =
-                window.location.origin + '/api/callback/dropbox'
+              if (provider === 'gdrive') {
+                const redirectUri =
+                  window.location.origin + '/api/callback/gdrive'
+                const url = getGoogleAuthUrl(redirectUri)
+                window.open(url, '_blank')
+              } else {
+                const redirectUri =
+                  window.location.origin + '/api/callback/dropbox'
 
-              dbx.auth
-                .getAuthenticationUrl(
-                  redirectUri,
-                  JSON.stringify({ redirectUri }),
-                  'code',
-                  'offline',
-                )
-                .then((url) => {
-                  window.open(url as string, '_blank')
-                })
+                dbx.auth
+                  .getAuthenticationUrl(
+                    redirectUri,
+                    JSON.stringify({ redirectUri }),
+                    'code',
+                    'offline',
+                  )
+                  .then((url) => {
+                    window.open(url as string, '_blank')
+                  })
+              }
             }}
           >
             {t('authorize')}

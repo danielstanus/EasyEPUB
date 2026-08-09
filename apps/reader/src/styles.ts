@@ -6,6 +6,17 @@ import { Settings } from './state'
 import { keys } from './utils'
 
 export const activeClass = 'bg-primary70'
+
+/**
+ * Inject the self-hosted fonts (Roboto / Roboto Serif) into the book iframe.
+ * The iframe is srcdoc-based and inherits the parent origin, so an absolute
+ * URL is used to bypass the `<base>` element that epubjs sets to the book's
+ * blob URL.
+ */
+export function injectFonts(contents: Contents | undefined) {
+  if (!contents || typeof window === 'undefined') return
+  contents.addStylesheet(`${window.location.origin}/fonts/fonts.css`)
+}
 export const defaultStyle = {
   html: {
     padding: '0 !important',

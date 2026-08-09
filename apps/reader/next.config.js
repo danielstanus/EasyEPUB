@@ -1,3 +1,5 @@
+process.env.RECOIL_DUPLICATE_ATOM_KEY_CHECKING_ENABLED = 'false'
+
 const path = require('path')
 
 const withBundleAnalyzer = require('@next/bundle-analyzer')({

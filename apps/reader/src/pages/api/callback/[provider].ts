@@ -18,13 +18,41 @@ export default async function handler(
 
   const state = JSON.parse(req.query.state)
 
-  const response = await dbx.auth.getAccessTokenFromCode(
-    state.redirectUri,
-    req.query.code,
-  )
-  const result = response.result as any
+  const provider = (req.query.provider as string) || 'dropbox'
+  const tokenKey = mapToToken[provider] ?? mapToToken['dropbox'] ?? 'dropbox-refresh-token'
 
-  nookies.set({ res }, mapToToken['dropbox'], result.refresh_token, {
+  let refreshToken = ''
+
+  if (provider === 'gdrive') {
+    const params = new URLSearchParams({
+      code: req.query.code,
+      client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '',
+      client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
+      redirect_uri: state.redirectUri,
+      grant_type: 'authorization_code',
+    })
+
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    })
+
+    const tokenData = await tokenRes.json()
+    if (!tokenData.refresh_token) {
+      return res.status(400).json({ error: 'No refresh_token returned by Google', tokenData })
+    }
+    refreshToken = tokenData.refresh_token
+  } else {
+    const response = await dbx.auth.getAccessTokenFromCode(
+      state.redirectUri,
+      req.query.code,
+    )
+    const result = response.result as any
+    refreshToken = result.refresh_token
+  }
+
+  nookies.set({ res }, tokenKey, refreshToken, {
     maxAge: 365 * 24 * 60 * 60,
     secure: true,
     path: '/',
