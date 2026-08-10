@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/web-manifest-combined.json",
-  "name": "Lumen Read",
-  "short_name": "Lumen Read",
+  "name": "EasyEPUB",
+  "short_name": "EasyEPUB",
   "description": "Redefine EPUB reader",
   "icons": [
     {

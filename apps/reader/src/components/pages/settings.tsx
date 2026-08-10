@@ -5,7 +5,12 @@ import { destroyCookie, parseCookies } from 'nookies'
 import React, { useState } from 'react'
 
 import { db } from '@flow/reader/db'
-import { getGoogleAuthUrl, uploadDataToGDrive } from '@flow/reader/gdrive'
+import {
+  EpubSyncProgress,
+  fullSyncFromGDrive,
+  fullSyncToGDrive,
+  getGoogleAuthUrl,
+} from '@flow/reader/gdrive'
 import {
   ColorScheme,
   useColorScheme,
@@ -168,7 +173,16 @@ const Synchronization: React.FC = () => {
   const refreshToken = cookies[tokenKey]
   const render = useForceRender()
   const t = useTranslation('settings.synchronization')
-  const [syncing, setSyncing] = useState(false)
+
+  // Upload state
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<EpubSyncProgress[]>([])
+  const [uploadDone, setUploadDone] = useState(false)
+
+  // Download state
+  const [downloading, setDownloading] = useState(false)
+  const [downloadProgress, setDownloadProgress] = useState<EpubSyncProgress[]>([])
+  const [downloadDone, setDownloadDone] = useState(false)
 
   useEventListener('message', (e) => {
     if (e.data === OAUTH_SUCCESS_MESSAGE) {
@@ -176,17 +190,53 @@ const Synchronization: React.FC = () => {
     }
   })
 
-  const handleSyncGDrive = async () => {
+  const handleUpload = async () => {
+    setUploading(true)
+    setUploadProgress([])
+    setUploadDone(false)
     try {
-      setSyncing(true)
-      const books = (await db?.books.toArray()) || []
-      await uploadDataToGDrive(books)
-      alert('Sincronización con Google Drive completada.')
+      await fullSyncToGDrive((p) => {
+        setUploadProgress((prev) => {
+          const idx = prev.findIndex((x) => x.bookId === p.bookId)
+          if (idx >= 0) {
+            const next = [...prev]
+            next[idx] = p
+            return next
+          }
+          return [...prev, p]
+        })
+      })
+      setUploadDone(true)
     } catch (e: any) {
       console.error(e)
-      alert('Error al sincronizar con Google Drive: ' + (e?.message || e))
+      alert('Error al subir a Google Drive: ' + (e?.message || e))
     } finally {
-      setSyncing(false)
+      setUploading(false)
+    }
+  }
+
+  const handleDownload = async () => {
+    setDownloading(true)
+    setDownloadProgress([])
+    setDownloadDone(false)
+    try {
+      await fullSyncFromGDrive((p) => {
+        setDownloadProgress((prev) => {
+          const idx = prev.findIndex((x) => x.bookId === p.bookId)
+          if (idx >= 0) {
+            const next = [...prev]
+            next[idx] = p
+            return next
+          }
+          return [...prev, p]
+        })
+      })
+      setDownloadDone(true)
+    } catch (e: any) {
+      console.error(e)
+      alert('Error al descargar de Google Drive: ' + (e?.message || e))
+    } finally {
+      setDownloading(false)
     }
   }
 
@@ -198,6 +248,8 @@ const Synchronization: React.FC = () => {
       <p className="mt-1 mb-3 text-sm text-gray-600 dark:text-gray-400">
         {t('synchronization_desc')}
       </p>
+
+      {/* Service selector + auth */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
         <div className="flex-grow">
           <label
@@ -209,11 +261,7 @@ const Synchronization: React.FC = () => {
           <div className="relative w-full">
             <select
               className="focus:ring-primary w-full appearance-none rounded-lg border-none bg-gray-100 p-3 pr-10 focus:ring-2 dark:bg-gray-800"
-              style={{
-                WebkitAppearance: 'none',
-                MozAppearance: 'none',
-                backgroundImage: 'none',
-              }}
+              style={{ WebkitAppearance: 'none', MozAppearance: 'none', backgroundImage: 'none' }}
               id="sync-service"
               value={provider}
               onChange={(e) => setProvider(e.target.value as 'gdrive' | 'dropbox')}
@@ -226,50 +274,27 @@ const Synchronization: React.FC = () => {
             </span>
           </div>
         </div>
+
         <div className="flex gap-2 sm:pb-0.5">
           {refreshToken ? (
-            <>
-              <button
-                className="bg-primary text-on-primary rounded-full px-6 py-2.5 font-medium shadow-sm transition-all hover:shadow-md"
-                onClick={() => {
-                  destroyCookie(null, tokenKey)
-                  render()
-                }}
-              >
-                {t('unauthorize')}
-              </button>
-              {provider === 'gdrive' && (
-                <button
-                  className="bg-primary text-on-primary rounded-full px-6 py-2.5 font-medium shadow-sm transition-all hover:shadow-md"
-                  onClick={handleSyncGDrive}
-                  disabled={syncing}
-                >
-                  {syncing ? '...' : t('sync_now')}
-                </button>
-              )}
-            </>
+            <button
+              className="rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+              onClick={() => { destroyCookie(null, tokenKey); render() }}
+            >
+              {t('unauthorize')}
+            </button>
           ) : (
             <button
               className="bg-primary text-on-primary w-full rounded-full px-6 py-2.5 font-medium shadow-sm transition-all hover:shadow-md sm:w-auto"
               onClick={() => {
                 if (provider === 'gdrive') {
-                  const redirectUri =
-                    window.location.origin + '/api/callback/gdrive'
-                  const url = getGoogleAuthUrl(redirectUri)
-                  window.open(url, '_blank')
+                  const redirectUri = window.location.origin + '/api/callback/gdrive'
+                  window.open(getGoogleAuthUrl(redirectUri), '_blank')
                 } else {
-                  const redirectUri =
-                    window.location.origin + '/api/callback/dropbox'
+                  const redirectUri = window.location.origin + '/api/callback/dropbox'
                   dbx.auth
-                    .getAuthenticationUrl(
-                      redirectUri,
-                      JSON.stringify({ redirectUri }),
-                      'code',
-                      'offline',
-                    )
-                    .then((url) => {
-                      window.open(url as string, '_blank')
-                    })
+                    .getAuthenticationUrl(redirectUri, JSON.stringify({ redirectUri }), 'code', 'offline')
+                    .then((url) => window.open(url as string, '_blank'))
                 }
               }}
             >
@@ -278,6 +303,97 @@ const Synchronization: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* GDrive sync actions — only shown when authorized */}
+      {refreshToken && provider === 'gdrive' && (
+        <div className="mt-5 space-y-4">
+          {/* Upload */}
+          <div className="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-800 dark:text-white">
+                  📤 Subir biblioteca a Drive
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Sube los metadatos y los archivos .epub al Drive.
+                </p>
+              </div>
+              <button
+                className="bg-primary text-on-primary shrink-0 rounded-full px-5 py-2 text-sm font-medium shadow-sm transition-all hover:shadow-md disabled:opacity-50"
+                onClick={handleUpload}
+                disabled={uploading || downloading}
+              >
+                {uploading ? 'Subiendo…' : uploadDone ? '✓ Listo' : 'Subir'}
+              </button>
+            </div>
+
+            {uploadProgress.length > 0 && (
+              <ul className="mt-3 max-h-36 space-y-1 overflow-y-auto">
+                {uploadProgress.map((p) => (
+                  <li key={p.bookId} className="flex items-center gap-2 text-xs">
+                    <span
+                      className={{
+                        uploading: 'text-blue-500',
+                        done: 'text-green-500',
+                        error: 'text-red-500',
+                      }[p.status]}
+                    >
+                      {p.status === 'uploading' && '⏳'}
+                      {p.status === 'done' && '✓'}
+                      {p.status === 'error' && '✗'}
+                    </span>
+                    <span className="truncate text-gray-700 dark:text-gray-300">{p.bookName}</span>
+                    {p.error && <span className="text-red-400">({p.error})</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Download */}
+          <div className="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-800 dark:text-white">
+                  📥 Restaurar desde Drive
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Descarga los libros que falten en este dispositivo.
+                </p>
+              </div>
+              <button
+                className="bg-primary text-on-primary shrink-0 rounded-full px-5 py-2 text-sm font-medium shadow-sm transition-all hover:shadow-md disabled:opacity-50"
+                onClick={handleDownload}
+                disabled={uploading || downloading}
+              >
+                {downloading ? 'Descargando…' : downloadDone ? '✓ Listo' : 'Restaurar'}
+              </button>
+            </div>
+
+            {downloadProgress.length > 0 && (
+              <ul className="mt-3 max-h-36 space-y-1 overflow-y-auto">
+                {downloadProgress.map((p) => (
+                  <li key={p.bookId} className="flex items-center gap-2 text-xs">
+                    <span
+                      className={{
+                        uploading: 'text-blue-500',
+                        done: 'text-green-500',
+                        error: 'text-red-500',
+                      }[p.status]}
+                    >
+                      {p.status === 'uploading' && '⏳'}
+                      {p.status === 'done' && '✓'}
+                      {p.status === 'error' && '✗'}
+                    </span>
+                    <span className="truncate text-gray-700 dark:text-gray-300">{p.bookName}</span>
+                    {p.error && <span className="text-red-400">({p.error})</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

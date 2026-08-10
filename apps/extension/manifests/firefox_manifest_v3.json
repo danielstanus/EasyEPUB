@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Lumen Read",
+  "name": "EasyEPUB",
   "version": "2.0.1",
   "description": "Redefine ePub reader",
   "icons": {
@@ -13,7 +13,7 @@
       "16": "icons/icon-16.png",
       "48": "icons/icon-48.png"
     },
-    "default_title": "Lumen Read"
+    "default_title": "EasyEPUB"
   },
   "permissions": ["storage"],
   "background": {
@@ -24,7 +24,7 @@
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "lumen-read@zolangui.dev",
+      "id": "easyepub@zolangui.dev",
       "strict_min_version": "109.0",
       "data_collection_permissions": {
         "required": ["none"]

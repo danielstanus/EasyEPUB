@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Lumen Read",
+  "name": "EasyEPUB",
   "version": "2.0.1",
   "description": "Redefine ePub reader",
   "icons": {
@@ -13,7 +13,7 @@
       "16": "icons/icon-16.png",
       "48": "icons/icon-48.png"
     },
-    "default_title": "Lumen Read"
+    "default_title": "EasyEPUB"
   },
   "permissions": ["storage", "windows"],
   "host_permissions": ["*://*.dropboxapi.com/*"],

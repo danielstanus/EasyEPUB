@@ -1,9 +1,9 @@
 <div align="center">
 
   <!-- Logo -->
-  <img src="assets/icon.svg" alt="Lumen Read Logo" width="120" height="120" />
+  <img src="assets/icon.svg" alt="EasyEPUB Logo" width="120" height="120" />
 
-# Lumen Read
+# EasyEPUB
 
 ### A modern, immersive EPUB reader for productivity and focus.
 
@@ -46,7 +46,7 @@
 
 ## ✨ Features
 
-**Lumen Read** transforms your reading experience with features designed for flow:
+**EasyEPUB** transforms your reading experience with features designed for flow:
 
 - 🔥 **Reading Analytics:** Visualize your progress with a GitHub-style **Heatmap Calendar** and keep your momentum with **Streak tracking**.
 - 🎨 **Dynamic Theming:** The entire UI (including the logo!) adapts to your chosen color, powered by Material Design 3.
@@ -58,9 +58,9 @@
 
 ### 📥 Installation (Manual)
 
-Currently, Lumen Read is available via manual installation. It takes 30 seconds!
+Currently, EasyEPUB is available via manual installation. It takes 30 seconds!
 
-1. **Download** the latest `Lumen-chrome.zip` from the [Releases Page](https://github.com/Zolangui/Lumen-Read/releases).
+1. **Download** the latest `EasyEPUB-chrome.zip` from the [Releases Page](https://github.com/Zolangui/Lumen-Read/releases).
 2. **Unzip** the file to a folder.
 3. Open Chrome/Edge/Brave and go to `chrome://extensions`.
 4. Toggle **Developer mode** (top right corner).
@@ -96,7 +96,7 @@ pnpm dev
 
 ## 🤝 Credits
 
-**Lumen Read** is an enhanced fork of the [Flow](https://github.com/pacexy/flow) project.
+**EasyEPUB** is an enhanced fork of the [Flow](https://github.com/pacexy/flow) project.
 
 > _Refactored and reimagined using **Google Antigravity & Gemini 3**._
 

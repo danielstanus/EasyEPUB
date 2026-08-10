@@ -1,8 +1,8 @@
 {
-  "desc": "Lumen Read 是一款免费的 EPUB 阅读器浏览器扩展。同时阅读多本书籍。在浏览器中无缝阅读。",
+  "desc": "EasyEPUB 是一款免费的 EPUB 阅读器浏览器扩展。同时阅读多本书籍。在浏览器中无缝阅读。",
   "page": {
     "home": {
-      "title": "Lumen Read - EPUB 阅读器扩展"
+      "title": "EasyEPUB - EPUB 阅读器扩展"
     },
     "faq": {
       "title": "常见问题"
@@ -34,15 +34,15 @@
   "feature": {
     "0": {
       "title": "浏览器扩展",
-      "desc": "Lumen Read 是一款浏览器扩展，无缝集成到您的浏览体验中。"
+      "desc": "EasyEPUB 是一款浏览器扩展，无缝集成到您的浏览体验中。"
     },
     "1": {
       "title": "离线优先",
-      "desc": "Lumen Read 可以离线运行，并自动更新。"
+      "desc": "EasyEPUB 可以离线运行，并自动更新。"
     },
     "2": {
       "title": "网格布局",
-      "desc": "Lumen Read 支持（水平）网格布局，允许您同时阅读多本书。"
+      "desc": "EasyEPUB 支持（水平）网格布局，允许您同时阅读多本书。"
     },
     "3": {
       "title": "自定义云端存储",
@@ -52,7 +52,7 @@
   "frequently_asked_questions": "常见问题",
   "qa2": {
     "0": {
-      "q": "如何安装 Lumen Read？",
+      "q": "如何安装 EasyEPUB？",
       "a": "从 Chrome 网上应用店下载，或在开发者模式下加载解压后的扩展程序。"
     },
     "1": {

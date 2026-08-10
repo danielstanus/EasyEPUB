@@ -71,7 +71,7 @@ const Header: React.FC = () => {
       <div className="container flex items-center">
         <Link className="mr-8 flex items-center gap-3" href="/">
           <img src="/icons/512.png" alt="Logo" className="w-7" />
-          <span className="typescale-title-large">Lumen Read</span>
+          <span className="typescale-title-large">EasyEPUB</span>
         </Link>
         <Navbar className="hidden sm:flex" />
 
@@ -116,7 +116,7 @@ const Footer: React.FC = () => {
           </Link>
         </div>
 
-        <div className="typescale-body-small text-white">© 2025 Lumen Read</div>
+        <div className="typescale-body-small text-white">© 2025 EasyEPUB</div>
       </div>
     </footer>
   )

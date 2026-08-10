@@ -1,0 +1,70 @@
+# Plan de Evaluación e Implementación: App Móvil Nativa (Archivo .APK para Android)
+
+El objetivo es permitir al usuario disponer de una **App móvil instalable (.APK)** en Android que no requiera navegación web visible y permita continuar la lectura sincronizada con el ordenador mediante Google Drive.
+
+---
+
+## Comparativa: PWA Instalada vs App Nativa (.APK)
+
+| Característica | PWA (Añadir a Inicio desde Vercel) | App Nativa (.APK con Capacitor / TWA) |
+|---|---|---|
+| **Experiencia visual** | Pantalla completa (sin interfaz de navegador). | Pantalla completa nativa (Splash screen, icono independiente en Android). |
+| **Instalación** | Desde Chrome/Safari ("Añadir a pantalla de inicio"). | Archivo `.apk` instalable en cualquier teléfono Android. |
+| **Actualizaciones** | **Automáticas**: Al subir cambios a GitHub/Vercel se actualiza sola. | Requiere volver a compilar el `.apk` salvo que use la URL de producción. |
+| **Rendimiento** | Idéntico a nativo (usa el motor WebView de Android/iOS). | Idéntico a nativo (usa Android WebView/TWA). |
+| **Uso sin conexión** | Sí (Service Worker / PWA). | Sí (Service Worker / PWA en bundle). |
+
+---
+
+## Opinión y Recomendación Técnica
+
+> [!TIP]
+> **Recomendación**: La mejor solución híbrida es empaquetar la app usando **Capacitor Android** o **TWA (Trusted Web Activity / Bubblewrap)** apuntando a la arquitectura de Flow. 
+> Esto genera un archivo **`app-release.apk`** listo para enviar e instalar en cualquier teléfono Android sin pasar por la Google Play Store.
+
+---
+
+## Plan de Implementación para Generar el .APK
+
+### Fase 1: Integración de Capacitor Android
+1. Instalar las dependencias de Capacitor en la app lector `apps/reader`:
+   ```bash
+   pnpm --filter @flow/reader add @capacitor/core @capacitor/cli @capacitor/android
+   ```
+2. Inicializar Capacitor con la configuración de la app:
+   - **App ID**: `com.flow.reader`
+   - **App Name**: `Flow Reader`
+
+### Fase 2: Configuración de la App Android (`apps/reader/capacitor.config.json`)
+```json
+{
+  "appId": "com.flow.reader",
+  "appName": "Flow Reader",
+  "webDir": "out",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://tu-app.vercel.app",
+    "cleartext": true
+  }
+}
+```
+
+### Fase 3: Generación del Proyecto Android y Compilación del .APK
+1. Generar la carpeta nativa `android/` en el proyecto.
+2. Usar **Gradle** / **Android CLI** para compilar la aplicación en modo `debug` o `release`:
+   ```powershell
+   ./gradlew assembleDebug
+   ```
+3. El comando generará el archivo instalable:
+   `apps/reader/android/app/build/outputs/apk/debug/app-debug.apk`
+
+### Fase 4: Entrega del .APK al Usuario
+- Transferir el archivo `.apk` al teléfono móvil para instalarlo directamente.
+
+---
+
+## Open Questions para el Usuario
+
+> [!IMPORTANT]
+> 1. **¿Prefieres que compilemos el archivo `.apk` usando Capacitor para instalarlo directamente en tu teléfono?**
+> 2. **¿Deseas que la APK apunte a la URL de Vercel (para actualizarse automáticamente cada vez que hagas cambios) o que funcione de manera 100% offline local?**

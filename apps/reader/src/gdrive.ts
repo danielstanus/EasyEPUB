@@ -1,6 +1,6 @@
 import { parseCookies } from 'nookies'
 
-import { BookRecord } from './db'
+import { BookRecord, db } from './db'
 import { deserializeData, DATA_FILENAME, mapToToken, serializeData } from './sync'
 
 let _gdriveAccessToken: string | null = null
@@ -51,6 +51,8 @@ export async function getGoogleAccessToken(): Promise<string> {
   return _gdriveReq
 }
 
+// ─── Internal helpers ─────────────────────────────────────────────────────────
+
 async function findFileIdInAppData(filename: string): Promise<string | null> {
   const token = await getGoogleAccessToken()
   const res = await fetch(
@@ -71,10 +73,17 @@ async function findFileIdInAppData(filename: string): Promise<string | null> {
   return null
 }
 
-export async function uploadDataToGDrive(books: BookRecord[]) {
+/**
+ * Generic upload: creates or updates a file in appDataFolder.
+ * Supports any Blob (JSON metadata or binary epub).
+ */
+async function upsertFileInAppData(
+  filename: string,
+  blob: Blob,
+  mimeType: string,
+): Promise<string> {
   const token = await getGoogleAccessToken()
-  const fileContent = serializeData(books)
-  const existingFileId = await findFileIdInAppData(DATA_FILENAME)
+  const existingFileId = await findFileIdInAppData(filename)
 
   if (existingFileId) {
     const res = await fetch(
@@ -83,28 +92,26 @@ export async function uploadDataToGDrive(books: BookRecord[]) {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          'Content-Type': mimeType,
         },
-        body: fileContent,
+        body: blob,
       },
     )
-    if (!res.ok) throw new Error('Failed to update data.json in Google Drive')
-    return res.json()
+    if (!res.ok) throw new Error(`Failed to update ${filename} in Google Drive`)
+    const data = await res.json()
+    return data.id as string
   } else {
     const metadata = {
-      name: DATA_FILENAME,
+      name: filename,
       parents: ['appDataFolder'],
-      mimeType: 'application/json',
+      mimeType,
     }
     const formData = new FormData()
     formData.append(
       'metadata',
       new Blob([JSON.stringify(metadata)], { type: 'application/json' }),
     )
-    formData.append(
-      'file',
-      new Blob([fileContent], { type: 'application/json' }),
-    )
+    formData.append('file', blob)
 
     const res = await fetch(
       'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
@@ -116,9 +123,21 @@ export async function uploadDataToGDrive(books: BookRecord[]) {
         body: formData,
       },
     )
-    if (!res.ok) throw new Error('Failed to upload data.json to Google Drive')
-    return res.json()
+    if (!res.ok) throw new Error(`Failed to upload ${filename} to Google Drive`)
+    const data = await res.json()
+    return data.id as string
   }
+}
+
+// ─── Metadata (data.json) ─────────────────────────────────────────────────────
+
+export async function uploadDataToGDrive(books: BookRecord[]) {
+  const fileContent = serializeData(books)
+  await upsertFileInAppData(
+    DATA_FILENAME,
+    new Blob([fileContent], { type: 'application/json' }),
+    'application/json',
+  )
 }
 
 export async function downloadDataFromGDrive(): Promise<BookRecord[] | null> {
@@ -137,4 +156,143 @@ export async function downloadDataFromGDrive(): Promise<BookRecord[] | null> {
   if (!res.ok) throw new Error('Failed to download data.json from Google Drive')
   const text = await res.text()
   return deserializeData(text)
+}
+
+// ─── Book files (.epub) ───────────────────────────────────────────────────────
+
+/** Returns the remote filename for a book's epub in appDataFolder */
+function epubRemoteName(bookId: string, bookName: string) {
+  return `books/${bookId}/${bookName}`
+}
+
+export interface EpubSyncProgress {
+  bookId: string
+  bookName: string
+  status: 'uploading' | 'done' | 'error'
+  error?: string
+}
+
+/**
+ * Uploads one epub file to Google Drive (appDataFolder/books/<bookId>/<name.epub>).
+ * Returns true on success.
+ */
+export async function uploadEpubToGDrive(
+  bookId: string,
+  file: File,
+): Promise<void> {
+  const remoteName = epubRemoteName(bookId, file.name)
+  await upsertFileInAppData(
+    remoteName,
+    file,
+    'application/epub+zip',
+  )
+}
+
+/**
+ * Downloads an epub from Google Drive and restores it in IndexedDB.
+ * Returns the File object, or null if not found remotely.
+ */
+export async function downloadEpubFromGDrive(
+  book: BookRecord,
+): Promise<File | null> {
+  const token = await getGoogleAccessToken()
+  const remoteName = epubRemoteName(book.id, book.name)
+  const fileId = await findFileIdInAppData(remoteName)
+  if (!fileId) return null
+
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  )
+  if (!res.ok) throw new Error(`Failed to download epub for "${book.name}"`)
+  const blob = await res.blob()
+  return new File([blob], book.name, { type: 'application/epub+zip' })
+}
+
+/**
+ * Full sync: uploads metadata JSON + all epub files that are not yet on Drive.
+ * Calls onProgress for each book processed.
+ */
+export async function fullSyncToGDrive(
+  onProgress?: (p: EpubSyncProgress) => void,
+): Promise<void> {
+  const [books, files] = await Promise.all([
+    db?.books.toArray() ?? [],
+    db?.files.toArray() ?? [],
+  ])
+
+  // 1. Metadata
+  await uploadDataToGDrive(books)
+
+  // 2. Epub files
+  for (const fileRecord of files) {
+    const book = books.find((b) => b.id === fileRecord.id)
+    if (!book) continue
+
+    onProgress?.({ bookId: book.id, bookName: book.name, status: 'uploading' })
+
+    try {
+      await uploadEpubToGDrive(book.id, fileRecord.file)
+      onProgress?.({ bookId: book.id, bookName: book.name, status: 'done' })
+    } catch (err: any) {
+      console.error(`Error uploading ${book.name}:`, err)
+      onProgress?.({
+        bookId: book.id,
+        bookName: book.name,
+        status: 'error',
+        error: err?.message ?? String(err),
+      })
+    }
+  }
+}
+
+/**
+ * Download all books from Drive that are missing locally.
+ * Restores both metadata and epub files.
+ */
+export async function fullSyncFromGDrive(
+  onProgress?: (p: EpubSyncProgress) => void,
+): Promise<void> {
+  // 1. Download metadata
+  const remoteBooks = await downloadDataFromGDrive()
+  if (!remoteBooks || remoteBooks.length === 0) return
+
+  const localFiles = await db?.files.toArray() ?? []
+  const localFileIds = new Set(localFiles.map((f) => f.id))
+
+  // Upsert book records
+  await db?.books.bulkPut(remoteBooks)
+
+  // 2. Download epub files that are missing locally
+  for (const book of remoteBooks) {
+    if (localFileIds.has(book.id)) continue // already have the file
+
+    onProgress?.({ bookId: book.id, bookName: book.name, status: 'uploading' })
+
+    try {
+      const file = await downloadEpubFromGDrive(book)
+      if (file) {
+        await db?.files.put({ id: book.id, file })
+        onProgress?.({ bookId: book.id, bookName: book.name, status: 'done' })
+      } else {
+        onProgress?.({
+          bookId: book.id,
+          bookName: book.name,
+          status: 'error',
+          error: 'Not found on Drive',
+        })
+      }
+    } catch (err: any) {
+      onProgress?.({
+        bookId: book.id,
+        bookName: book.name,
+        status: 'error',
+        error: err?.message ?? String(err),
+      })
+    }
+  }
 }
