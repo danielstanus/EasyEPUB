@@ -27,9 +27,11 @@ async function extractAndSaveCover(bookId: string, file: File): Promise<void> {
       }
     }
 
-    const cover = url
-      ? await readBlob((r) => r.readAsDataURL(await fetch(url!).then((res) => res.blob())))
-      : null
+    let cover: string | null = null
+    if (url) {
+      const blob = await fetch(url).then((res) => res.blob())
+      cover = await readBlob((r) => r.readAsDataURL(blob))
+    }
 
     await db?.covers.put({ id: bookId, cover })
   } catch (err) {
