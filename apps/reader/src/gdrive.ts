@@ -1,7 +1,41 @@
 import { parseCookies } from 'nookies'
 
 import { BookRecord, db } from './db'
+import { fileToEpub, readBlob } from './file'
 import { deserializeData, DATA_FILENAME, mapToToken, serializeData } from './sync'
+
+/** Extract cover from an epub File and save it to db.covers (upsert). */
+async function extractAndSaveCover(bookId: string, file: File): Promise<void> {
+  try {
+    const epub = await fileToEpub(file)
+    let url: string | null = await epub.coverUrl()
+
+    // Fallback: scan the zip for an image named 'cover'
+    if (!url && (epub.archive as any)?.zip) {
+      const zip = (epub.archive as any).zip
+      const files: string[] = Object.keys(zip.files)
+      const candidates = ['cover.jpg', 'cover.jpeg', 'cover.png', 'OEBPS/cover.jpg', 'OPS/cover.jpg']
+      let match = candidates.find((c) => files.includes(c))
+      if (!match) {
+        match = files.find(
+          (f) => f.toLowerCase().includes('cover') && /\.(jpg|jpeg|png)$/i.test(f),
+        )
+      }
+      if (match) {
+        const blob = await zip.file(match)?.async('blob')
+        if (blob) url = URL.createObjectURL(blob)
+      }
+    }
+
+    const cover = url
+      ? await readBlob((r) => r.readAsDataURL(await fetch(url!).then((res) => res.blob())))
+      : null
+
+    await db?.covers.put({ id: bookId, cover })
+  } catch (err) {
+    console.warn(`Could not extract cover for ${bookId}:`, err)
+  }
+}
 
 let _gdriveAccessToken: string | null = null
 let _gdriveAccessTokenExpiresAt = 0
@@ -277,6 +311,8 @@ export async function fullSyncFromGDrive(
       const file = await downloadEpubFromGDrive(book)
       if (file) {
         await db?.files.put({ id: book.id, file })
+        // Extract and save cover (same logic as addFile in file.ts)
+        await extractAndSaveCover(book.id, file)
         onProgress?.({ bookId: book.id, bookName: book.name, status: 'done' })
       } else {
         onProgress?.({
