@@ -27,11 +27,16 @@ export interface BookRecord {
   updatedAt?: number
   cfi?: string
   percentage?: number
+  pageCount?: number // Total page count (from pageList or locations.length())
+  pageCountEstimated?: boolean // True if estimate, false if precise
+  locations?: string // Serialized EPUB.js locations JSON for CFI→page mapping
   definitions: string[]
   annotations: Annotation[]
   configuration?: {
     typography?: TypographyConfiguration
   }
+  favorite?: boolean
+  position?: number
 }
 
 export class DB extends Dexie {
@@ -43,6 +48,21 @@ export class DB extends Dexie {
 
   constructor(name: string) {
     super(name)
+
+    this.version(8).stores({
+      books:
+        'id, name, size, metadata, createdAt, updatedAt, cfi, percentage, pageCount, pageCountEstimated, locations, definitions, annotations, configuration, favorite, position',
+    })
+
+    this.version(7).stores({
+      books:
+        'id, name, size, metadata, createdAt, updatedAt, cfi, percentage, pageCount, pageCountEstimated, locations, definitions, annotations, configuration, favorite',
+    })
+
+    this.version(6).stores({
+      books:
+        'id, name, size, metadata, createdAt, updatedAt, cfi, percentage, pageCount, pageCountEstimated, locations, definitions, annotations, configuration',
+    })
 
     this.version(5).stores({
       books:
@@ -115,4 +135,6 @@ export class DB extends Dexie {
   }
 }
 
-export const db = IS_SERVER ? null : new DB('re-reader')
+const isExport = process.env.NEXT_PUBLIC_IS_EXPORT === 'true'
+
+export const db = IS_SERVER && !isExport ? null : new DB('re-reader')

@@ -1,18 +1,11 @@
+import clsx from 'clsx'
 import { useState, useEffect, useMemo } from 'react'
 import Highlighter from 'react-highlight-words'
-import { VscCollapseAll, VscExpandAll } from 'react-icons/vsc'
 
 import { useAction, useList, useTranslation } from '@flow/reader/hooks'
-import {
-  flatTree,
-  IMatch,
-  useReaderSnapshot,
-  reader,
-} from '@flow/reader/models'
+import { IMatch, useReaderSnapshot, reader } from '@flow/reader/models'
 
-import { TextField } from '../Form'
-import { Row } from '../Row'
-import { PaneViewProps, PaneView } from '../base'
+import { PaneViewProps } from '../base'
 
 // When inputting with IME and storing state in `valtio`,
 // unexpected rendering with `e.target.value === ''` occurs,
@@ -34,50 +27,54 @@ function useIntermediateKeyword() {
   return [keyword, setKeyword] as const
 }
 
-export const SearchView: React.FC<PaneViewProps> = (props) => {
-  const [action] = useAction()
+export const SearchView: React.FC<PaneViewProps> = (_props) => {
+  const [action, setAction] = useAction()
   const { focusedBookTab } = useReaderSnapshot()
   const t = useTranslation()
 
   const [keyword, setKeyword] = useIntermediateKeyword()
 
   const results = focusedBookTab?.results
-  const expanded = results?.some((r) => r.expanded)
 
   return (
-    <PaneView
-      actions={[
-        {
-          id: expanded ? 'collapse-all' : 'expand-all',
-          title: t(expanded ? 'action.collapse_all' : 'action.expand_all'),
-          Icon: expanded ? VscCollapseAll : VscExpandAll,
-          handle() {
-            reader.focusedBookTab?.results?.forEach(
-              (r) => (r.expanded = !expanded),
-            )
-          },
-        },
-      ]}
-      {...props}
-    >
-      <div className="scroll-parent">
-        <div className="px-5 py-px">
-          <TextField
-            as="input"
-            name="keyword"
-            autoFocus={action === 'search'}
-            hideLabel
-            value={keyword}
-            placeholder={t('search.title')}
-            onChange={(e) => setKeyword(e.target.value)}
-            onClear={() => setKeyword('')}
-          />
+    <div className="h-full w-full overflow-hidden bg-white dark:bg-gray-900">
+      <div className="flex h-full min-w-[220px] flex-col">
+        <div className="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700">
+          <div className="flex items-center">
+            <button
+              onClick={() => setAction(undefined)}
+              className="rounded p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+            >
+              <span className="material-symbols-outlined text-xl">search</span>
+            </button>
+            <h2 className="ml-2 font-semibold text-gray-800 dark:text-white">
+              {t('search.header')}
+            </h2>
+          </div>
         </div>
-        {keyword && results && (
-          <ResultList results={results as IMatch[]} keyword={keyword} />
-        )}
+
+        <div className="p-4 pb-0">
+          <label className="relative mb-4 block">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
+              search
+            </span>
+            <input
+              className="focus:ring-primary focus:border-primary w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-10 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:ring-1 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:placeholder-gray-500"
+              placeholder={t('search.title')}
+              value={keyword}
+              autoFocus={action === 'search'}
+              onChange={(e) => setKeyword(e.target.value)}
+            />
+          </label>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 pb-4">
+          {keyword && results && (
+            <ResultList results={results as IMatch[]} keyword={keyword} />
+          )}
+        </div>
       </div>
-    </PaneView>
+    </div>
   )
 }
 
@@ -85,77 +82,175 @@ interface ResultListProps {
   results: IMatch[]
   keyword: string
 }
-const ResultList: React.FC<ResultListProps> = ({ results, keyword }) => {
-  const rows = useMemo(
-    () => results.flatMap((r) => flatTree(r)) ?? [],
-    [results],
-  )
-  const { outerRef, innerRef, items } = useList(rows)
-  const t = useTranslation('search')
 
-  const sectionCount = results.length
-  const resultCount = results.reduce((a, r) => r.subitems!.length + a, 0)
+interface ResultRowItem {
+  id: string
+  type: 'chapter' | 'match'
+  item: IMatch
+  chapterId?: string // For matches, to know which chapter they belong to
+  firstMatch?: IMatch // For chapters, to show the preview
+  matchCount?: number // For chapters, to show count
+  expanded?: boolean // For chapters
+}
+
+const ResultList: React.FC<ResultListProps> = ({ results, keyword }) => {
+  const rows = useMemo(() => {
+    if (!results) return []
+    const output: ResultRowItem[] = []
+
+    for (const chapter of results) {
+      const subitems = chapter.subitems || []
+      const expanded = chapter.expanded ?? false
+
+      // Add Chapter Row (Parent)
+      // We attach the first match to the chapter row for the preview
+      output.push({
+        id: chapter.id,
+        type: 'chapter',
+        item: chapter,
+        firstMatch: subitems[0],
+        matchCount: subitems.length,
+        expanded,
+      })
+
+      // If expanded, add the REST of the matches (skipping the first one which is shown in preview)
+      if (expanded) {
+        const remainingMatches = subitems.slice(1)
+        remainingMatches.forEach((match) => {
+          output.push({
+            id: match.id || match.cfi || '',
+            type: 'match',
+            item: match,
+            chapterId: chapter.id,
+          })
+        })
+      }
+    }
+    return output
+  }, [results])
+
+  const { outerRef, innerRef, items } = useList(rows)
 
   return (
-    <>
-      <div className="typescale-body-small text-outline px-5  py-2">
-        {t('files.result')
-          .replace('{n}', '' + resultCount)
-          .replace('{m}', '' + sectionCount)}
+    <div className="h-full" ref={outerRef}>
+      <div className="space-y-3 text-sm" ref={innerRef}>
+        {items.map(({ index }) => {
+          const row = rows[index]
+          if (!row) return null
+          return <ResultRow key={row.id} row={row} keyword={keyword} />
+        })}
       </div>
-      <div ref={outerRef} className="scroll">
-        <div ref={innerRef}>
-          {items.map(({ index }) => (
-            <ResultRow key={index} result={rows[index]} keyword={keyword} />
-          ))}
-        </div>
-      </div>
-    </>
+    </div>
   )
 }
 
 interface ResultRowProps {
-  result?: IMatch
+  row: ResultRowItem
   keyword: string
 }
-const ResultRow: React.FC<ResultRowProps> = ({ result, keyword }) => {
-  if (!result) return null
-  const { cfi, depth, expanded, subitems, id } = result
-  let { excerpt, description } = result
-  const tab = reader.focusedBookTab
-  const isResult = depth === 1
 
-  excerpt = excerpt.trim()
-  description = description?.trim()
+// Helper to ensure keyword is visible in the snippet
+const getSmartSnippet = (text: string, keyword: string) => {
+  if (!text || !keyword) return text
+  const index = text.toLowerCase().indexOf(keyword.toLowerCase())
+  if (index === -1) return text
+
+  // If keyword is near the start (within first 60 chars), return as is
+  if (index < 60) return text
+
+  // Otherwise, cut the beginning to center/start around the keyword
+  // We keep ~40 chars context before the keyword
+  return '...' + text.slice(index - 40)
+}
+
+const ResultRow: React.FC<ResultRowProps> = ({ row, keyword }) => {
+  const { type, item, firstMatch, expanded, matchCount } = row
+  const tab = reader.focusedBookTab
+  const t = useTranslation()
+
+  const handleNavigate = (cfi: string) => {
+    if (tab) {
+      tab.display(cfi)
+    }
+  }
+
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (tab && row.type === 'chapter') {
+      tab.toggleResult(row.id)
+    }
+  }
+
+  if (type === 'chapter') {
+    const hasMoreMatches = (matchCount || 0) > 1
+    const snippet = firstMatch
+      ? getSmartSnippet(firstMatch.excerpt, keyword)
+      : ''
+
+    return (
+      <div>
+        <h3 className="mb-1 font-bold text-gray-900 dark:text-white">
+          {item.excerpt || t('search.untitled')}
+        </h3>
+
+        {/* Preview Match (First Match) */}
+        {firstMatch && (
+          <div
+            className="mt-1 cursor-pointer rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+            onClick={() => handleNavigate(firstMatch.cfi!)}
+          >
+            <p className="line-clamp-3 border-primary/30 ml-1 border-l-2 py-0.5 pl-3 text-xs leading-snug text-gray-500 dark:text-gray-400">
+              <Highlighter
+                highlightClassName="text-primary bg-transparent font-bold"
+                searchWords={[keyword]}
+                textToHighlight={snippet.trim()}
+                autoEscape
+              />
+            </p>
+          </div>
+        )}
+
+        {/* Expand Button */}
+        {hasMoreMatches && (
+          <button
+            onClick={handleToggle}
+            className="text-primary hover:bg-primary/10 mt-1 flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors"
+          >
+            {expanded
+              ? t('search.collapse_results')
+              : t('search.expand_results')}
+            <span
+              className={clsx(
+                'material-symbols-outlined text-base transition-transform',
+                expanded ? 'rotate-180' : '',
+              )}
+            >
+              expand_more
+            </span>
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  // Match Row (Subsequent matches)
+  const snippet = getSmartSnippet(item.excerpt, keyword)
 
   return (
-    <Row
-      title={description ? `${description} / ${excerpt}` : excerpt}
-      label={excerpt}
-      description={description}
-      depth={depth}
-      active={tab?.activeResultID === id}
-      expanded={expanded}
-      subitems={subitems}
-      badge={isResult}
-      {...(!isResult && {
-        onClick: () => {
-          if (tab) {
-            tab.activeResultID = id
-            tab.display(cfi)
-          }
-        },
-      })}
-      toggle={() => tab?.toggleResult(id)}
-    >
-      {!isResult && (
-        <Highlighter
-          highlightClassName="match-highlight"
-          searchWords={[keyword]}
-          textToHighlight={excerpt}
-          autoEscape
-        />
-      )}
-    </Row>
+    <div className="mt-1">
+      <div
+        className="cursor-pointer rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+        onClick={() => handleNavigate(item.cfi!)}
+      >
+        <p className="line-clamp-3 border-primary/30 ml-1 border-l-2 py-0.5 pl-3 text-xs leading-snug text-gray-500 dark:text-gray-400">
+          <Highlighter
+            highlightClassName="text-primary bg-transparent font-bold"
+            searchWords={[keyword]}
+            textToHighlight={snippet.trim()}
+            autoEscape
+          />
+        </p>
+      </div>
+    </div>
   )
 }

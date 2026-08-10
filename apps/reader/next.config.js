@@ -1,13 +1,18 @@
+/* eslint-disable import/order */
 process.env.RECOIL_DUPLICATE_ATOM_KEY_CHECKING_ENABLED = 'false'
 
 const path = require('path')
 
+const { withSentryConfig } = require('@sentry/nextjs')
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 })
-const { withSentryConfig } = require('@sentry/nextjs')
+
+const IS_EXPORT = process.env.NEXT_PUBLIC_IS_EXPORT === 'true'
+
 const withPWA = require('next-pwa')({
   dest: 'public',
+  disable: IS_EXPORT,
 })
 const withTM = require('next-transpile-modules')([
   '@flow/internal',
@@ -36,14 +41,22 @@ const sentryWebpackPluginOptions = {
 /**
  * @type {import('next').NextConfig}
  **/
-const config = {
+let config = {
+  swcMinify: process.env.FAST_BUILD !== 'true', // Disable minification for fast builds
+  compress: process.env.FAST_BUILD !== 'true', // Disable gzip for fast builds
+  productionBrowserSourceMaps: false, // Disable for faster builds
+  typescript: {
+    ignoreBuildErrors: process.env.FAST_BUILD === 'true', // Skip type-checking ONLY in fast build
+  },
+  eslint: {
+    ignoreDuringBuilds: process.env.FAST_BUILD === 'true', // Skip linting ONLY in fast build
+  },
   pageExtensions: ['ts', 'tsx'],
   webpack(config) {
+    if (process.env.FAST_BUILD === 'true') {
+      config.optimization.minimize = false
+    }
     return config
-  },
-  i18n: {
-    locales: ['en-US', 'es-ES', 'de-DE', 'ja-JP', 'zh-CN'],
-    defaultLocale: 'en-US',
   },
   ...(IS_DOCKER && {
     output: 'standalone',
@@ -53,15 +66,31 @@ const config = {
   }),
 }
 
+if (!IS_EXPORT) {
+  config.i18n = {
+    locales: ['en-US', 'es-ES', 'de-DE', 'ja-JP', 'zh-CN'],
+    defaultLocale: 'en-US',
+  }
+} else {
+  config.images = {
+    unoptimized: true,
+  }
+}
+
 const base = withPWA(withTM(withBundleAnalyzer(config)))
 
 const dev = base
 const docker = base
-const prod = withSentryConfig(
-  base,
-  // Make sure adding Sentry options is the last code to run before exporting, to
-  // ensure that your source maps include changes from all other Webpack plugins
-  sentryWebpackPluginOptions,
-)
+
+// Only enable Sentry if not skipped
+const shouldEnableSentry = !process.env.SKIP_SENTRY
+const prod = shouldEnableSentry
+  ? withSentryConfig(
+      base,
+      // Make sure adding Sentry options is the last code to run before exporting, to
+      // ensure that your source maps include changes from all other Webpack plugins
+      sentryWebpackPluginOptions,
+    )
+  : base
 
 module.exports = IS_DEV ? dev : IS_DOCKER ? docker : prod

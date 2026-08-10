@@ -1,138 +1,167 @@
-import { StateLayer } from '@literal-ui/core'
-import { useMemo } from 'react'
-import { VscCollapseAll, VscExpandAll } from 'react-icons/vsc'
+import clsx from 'clsx'
+import { memo, useMemo, useState } from 'react'
 
+import { useAction, useList, useTranslation } from '@flow/reader/hooks'
 import {
-  useLibrary,
-  useList,
-  useMobile,
-  useTranslation,
-} from '@flow/reader/hooks'
-import {
-  compareHref,
-  dfs,
   flatTree,
-  INavItem,
+  INavItemSnapshot,
   reader,
   useReaderSnapshot,
 } from '@flow/reader/models'
 
-import { Row } from '../Row'
-import { PaneViewProps, PaneView, Pane } from '../base'
+import { PaneViewProps } from '../base'
 
-export const TocView: React.FC<PaneViewProps> = (props) => {
-  const mobile = useMobile()
-  return (
-    <PaneView {...props}>
-      {mobile || <LibraryPane />}
-      <TocPane />
-    </PaneView>
-  )
-}
+const EMPTY_OBJECT = {}
 
-const LibraryPane: React.FC = () => {
-  const books = useLibrary()
-  const t = useTranslation('toc')
+export const TocView: React.FC<PaneViewProps> = () => {
   return (
-    <Pane headline={t('library')} preferredSize={240}>
-      {books?.map((book) => (
-        <button
-          key={book.id}
-          className="relative w-full truncate py-1 pl-5 pr-3 text-left"
-          title={book.name}
-          draggable
-          onClick={() => reader.addTab(book)}
-          onDragStart={(e) => {
-            e.dataTransfer.setData('text/plain', book.id)
-          }}
-        >
-          <StateLayer />
-          {book.name}
-        </button>
-      ))}
-    </Pane>
+    <div className="h-full w-full overflow-hidden bg-white dark:bg-gray-900">
+      <div className="flex h-full min-w-[220px] flex-col">
+        <TocPane />
+      </div>
+    </div>
   )
 }
 
 const TocPane: React.FC = () => {
-  const t = useTranslation()
   const { focusedBookTab } = useReaderSnapshot()
-  const toc = focusedBookTab?.nav?.toc as INavItem[] | undefined
-  const rows = useMemo(() => toc?.flatMap((i) => flatTree(i)), [toc])
-  const expanded = toc?.some((r) => r.expanded)
-  const currentNavItem = focusedBookTab?.currentNavItem
+  const [, setAction] = useAction()
+  const t = useTranslation()
+  const toc = focusedBookTab?.nav?.toc as INavItemSnapshot[] | undefined
+  const expandedState = focusedBookTab?.tocExpandedState ?? EMPTY_OBJECT
+  const rows = useMemo(
+    () => toc?.flatMap((i) => flatTree(i, 1, expandedState)),
+    [toc, expandedState],
+  )
+  const currentNavItem = focusedBookTab?.currentNavItem as
+    | INavItemSnapshot
+    | undefined
+
+  const [lastClickedHref, setLastClickedHref] = useState<string | undefined>()
 
   const { outerRef, innerRef, items, scrollToItem } = useList(rows)
 
+  const bookTitle =
+    focusedBookTab?.book?.metadata?.title ||
+    focusedBookTab?.book?.name ||
+    t('toc.header')
+
   return (
-    <Pane
-      headline={t('toc.title')}
-      ref={outerRef}
-      actions={[
-        {
-          id: expanded ? 'collapse-all' : 'expand-all',
-          title: t(expanded ? 'action.collapse_all' : 'action.expand_all'),
-          Icon: expanded ? VscCollapseAll : VscExpandAll,
-          handle() {
-            reader.focusedBookTab?.nav?.toc?.forEach((r) =>
-              dfs(r as INavItem, (i) => (i.expanded = !expanded)),
-            )
-          },
-        },
-      ]}
-    >
-      {rows && (
-        <div ref={innerRef}>
-          {items.map(({ index }) => (
-            <TocRow
-              key={index}
-              currentNavItem={currentNavItem as INavItem}
-              item={rows[index]}
-              onActivate={() => scrollToItem(index)}
-            />
-          ))}
+    <div className="flex flex-grow flex-col">
+      {/* Header */}
+      <div className="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700">
+        <div className="flex min-w-0 items-center">
+          <button
+            onClick={() => setAction(undefined)}
+            className="rounded p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+          >
+            <span className="material-symbols-outlined text-xl">list</span>
+          </button>
+          <h2 className="ml-2 truncate font-semibold text-gray-800 dark:text-white">
+            {bookTitle}
+          </h2>
         </div>
-      )}
-    </Pane>
+      </div>
+
+      {/* Content */}
+      <div className="flex-grow overflow-y-auto p-4" ref={outerRef}>
+        <h3 className="mb-2 px-2 text-sm font-semibold text-gray-500 dark:text-gray-400">
+          {t('toc.header')}
+        </h3>
+        {rows && (
+          <div ref={innerRef}>
+            <ul className="text-sm text-gray-500 dark:text-gray-400">
+              {items.map(({ index }) => {
+                const item = rows[index]
+                if (!item) return null
+                return (
+                  <TocRow
+                    key={item.id}
+                    currentNavItem={currentNavItem}
+                    item={item}
+                    lastClickedHref={lastClickedHref}
+                    setLastClickedHref={setLastClickedHref}
+                    onActivate={() => scrollToItem(index)}
+                  />
+                )
+              })}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
 
 interface TocRowProps {
-  currentNavItem?: INavItem
-  item?: INavItem
+  currentNavItem?: INavItemSnapshot
+  item: INavItemSnapshot
+  lastClickedHref: string | undefined
+  setLastClickedHref: (href: string) => void
   onActivate: () => void
 }
-const TocRow: React.FC<TocRowProps> = ({
-  currentNavItem,
-  item,
-  onActivate,
-}) => {
-  if (!item) return null
-  const { label, subitems, depth, expanded, id, href } = item
-  const tab = reader.focusedBookTab
 
-  return (
-    <Row
-      title={label.trim()}
-      depth={depth}
-      active={href === currentNavItem?.href}
-      expanded={expanded}
-      subitems={subitems}
-      onClick={() => {
-        const [, id] = href.split('#')
-        const section = tab?.sections?.find((s) => compareHref(s.href, href))
+const TocRow = memo<TocRowProps>(
+  ({
+    currentNavItem,
+    item,
+    lastClickedHref,
+    setLastClickedHref,
+    onActivate,
+  }) => {
+    const { label, subitems, depth, expanded, id, href } = item
 
-        if (!section) return
+    const isActive = useMemo(() => {
+      if (lastClickedHref) {
+        return href === lastClickedHref
+      }
+      return href === currentNavItem?.href
+    }, [href, currentNavItem, lastClickedHref])
 
-        if (id) {
-          tab?.displayFromSelector(`#${id}`, section, false)
-        } else {
-          tab?.display(section.href, false)
-        }
-      }}
-      // `tab` can not be proxy here
-      toggle={() => tab?.toggle(id)}
-      onActivate={onActivate}
-    />
-  )
-}
+    const hasSubitems = subitems && subitems.length > 0
+    const paddingLeft = `${(depth - 1) * 1}rem`
+
+    return (
+      <li
+        className={clsx(
+          'overflow-hidden rounded transition-colors',
+          isActive
+            ? 'bg-primary/10 dark:bg-primary/20 hover:bg-primary/20 dark:hover:bg-primary/30'
+            : 'hover:bg-gray-100 dark:hover:bg-gray-800',
+        )}
+      >
+        <button
+          onClick={() => {
+            if (href) {
+              setLastClickedHref(href)
+              reader.focusedBookTab?.display(href, false)
+              onActivate()
+            }
+          }}
+          className={clsx(
+            'flex w-full items-center rounded px-2 py-1 text-left text-[13px]',
+            isActive && 'text-primary font-semibold dark:text-white',
+          )}
+          style={{ paddingLeft: depth > 1 ? paddingLeft : undefined }}
+        >
+          {hasSubitems && (
+            <span
+              onClick={(e) => {
+                e.stopPropagation()
+                reader.focusedBookTab?.toggle(id)
+              }}
+              className={clsx(
+                'material-symbols-outlined mr-1 text-sm transition-transform',
+                expanded ? 'rotate-90' : '',
+              )}
+            >
+              chevron_right
+            </span>
+          )}
+          <span className="truncate">{label.trim()}</span>
+        </button>
+      </li>
+    )
+  },
+)
+TocRow.displayName = 'TocRow'

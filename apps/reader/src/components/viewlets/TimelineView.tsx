@@ -1,45 +1,264 @@
 import dayjs from 'dayjs'
-import relativeTime from 'dayjs/plugin/relativeTime'
+import React, { useMemo } from 'react'
 
-import { useList, useTranslation } from '@flow/reader/hooks'
-import { reader, useReaderSnapshot } from '@flow/reader/models'
+import {
+  useAction,
+  useReadingTracker,
+  useTranslation,
+} from '@flow/reader/hooks'
+import { useReaderSnapshot } from '@flow/reader/models'
 
-import { Row } from '../Row'
-import { PaneViewProps, PaneView, Pane } from '../base'
+import { generateHeatmapGrid } from '../../utils/heatmap'
+import { PaneViewProps } from '../base'
 
-dayjs.extend(relativeTime)
-export const TimelineView: React.FC<PaneViewProps> = (props) => {
+export const TimelineView: React.FC<PaneViewProps> = () => {
+  const [, setAction] = useAction()
+  const { stats, todayTime } = useReadingTracker()
   const { focusedBookTab } = useReaderSnapshot()
-  const rows = focusedBookTab?.timeline
-  const { outerRef, innerRef, items } = useList(rows)
-  const t = useTranslation('timeline')
+  const t = useTranslation()
+
+  // Calculate current book progress
+  const currentBook = focusedBookTab?.book
+  const totalPages = currentBook?.pageCount || 400 // Fallback to 400 if not calculated yet
+  const isEstimated = currentBook?.pageCountEstimated ?? false
+  const pagesRead = focusedBookTab?.book.percentage
+    ? Math.round((focusedBookTab.book.percentage as number) * totalPages)
+    : 0
+  const progress = totalPages > 0 ? (pagesRead / totalPages) * 100 : 0
+
+  // Calculate average speed and estimated finish
+  const totalSessions = stats.sessions.filter(
+    (s) => s.bookId === currentBook?.id,
+  )
+  const totalMinutes = totalSessions.reduce((sum, s) => sum + s.duration, 0)
+  const avgSpeed =
+    totalMinutes > 0 ? Math.round((pagesRead / totalMinutes) * 60) : 0 // pages/hr
+
+  // Cap display at 200+ to avoid unrealistic numbers breaking layout
+  const avgSpeedDisplay = avgSpeed > 200 ? '200+' : avgSpeed.toString()
+
+  const remainingPages = totalPages - pagesRead
+  const estFinishMinutes =
+    avgSpeed > 0 && avgSpeed <= 200
+      ? Math.round((remainingPages / avgSpeed) * 60)
+      : 0
+  const estFinishHours = Math.floor(estFinishMinutes / 60)
+  const estFinishMins = estFinishMinutes % 60
+
+  // Generate heatmap data (last 12 weeks = 84 days)
+  const heatmapData = useMemo(() => {
+    const today = dayjs()
+    const data: { [key: string]: number } = {}
+
+    // Initialize all days to 0
+    for (let i = 0; i < 84; i++) {
+      const date = today.subtract(83 - i, 'day').format('YYYY-MM-DD')
+      data[date] = 0
+    }
+
+    // Fill in actual reading data
+    stats.sessions.forEach((session) => {
+      if (data[session.date] !== undefined) {
+        data[session.date] += session.duration
+      }
+    })
+
+    return data
+  }, [stats.sessions])
+
+  // Calculate grid and labels using verified utility
+  const {
+    grid: heatmapGrid,
+    numberOfWeeks,
+    monthLabels,
+  } = useMemo(() => generateHeatmapGrid(heatmapData), [heatmapData])
+
+  const getIntensityClass = (intensity: number) => {
+    switch (intensity) {
+      case 1:
+        return 'bg-primary/20'
+      case 2:
+        return 'bg-primary/40'
+      case 3:
+        return 'bg-primary/70'
+      case 4:
+        return 'bg-primary'
+      default:
+        return 'bg-gray-200 dark:bg-gray-700/50'
+    }
+  }
 
   return (
-    <PaneView {...props}>
-      <Pane headline={t('title')} ref={outerRef}>
-        {rows && (
-          <div ref={innerRef}>
-            {items.map(({ index }) => {
-              const row = rows[index]
-              if (!row) return null
-
-              const { location, timestamp } = row
-              const { cfi, href, displayed } = location.start
-              return (
-                <Row
-                  key={timestamp}
-                  description={displayed.page}
-                  info={dayjs(timestamp).format('HH:mm')}
-                  title={focusedBookTab.mapSectionToNavItem(href)?.label}
-                  onClick={() => {
-                    reader.focusedBookTab?.display(cfi)
-                  }}
-                />
-              )
-            })}
+    <div className="h-full w-full overflow-hidden bg-white dark:bg-gray-900">
+      <div className="flex h-full min-w-[220px] flex-col">
+        {/* Header */}
+        <div className="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700">
+          <div className="flex items-center">
+            <button
+              onClick={() => setAction(undefined)}
+              className="rounded p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+            >
+              <span className="material-symbols-outlined text-xl">
+                bar_chart
+              </span>
+            </button>
+            <h2 className="ml-2 font-semibold text-gray-800 dark:text-white">
+              {t('timeline.header')}
+            </h2>
           </div>
-        )}
-      </Pane>
-    </PaneView>
+        </div>
+
+        {/* Content */}
+        <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4">
+          {/* Stat Cards */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1 rounded-lg bg-white p-3 shadow-sm dark:bg-gray-800">
+              <div className="text-primary flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-base">
+                  schedule
+                </span>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {t('timeline.today_time')}
+                </p>
+              </div>
+              <p className="text-xl font-bold text-gray-900 dark:text-white">
+                {todayTime} min
+              </p>
+            </div>
+            <div className="flex flex-col gap-1 rounded-lg bg-white p-3 shadow-sm dark:bg-gray-800">
+              <div className="text-primary flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-base">
+                  local_fire_department
+                </span>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {t('timeline.streak')}
+                </p>
+              </div>
+              <p className="text-xl font-bold text-gray-900 dark:text-white">
+                {stats.currentStreak}{' '}
+                {stats.currentStreak === 1
+                  ? t('timeline.day')
+                  : t('timeline.days')}
+              </p>
+            </div>
+          </div>
+
+          {/* Current Book Progress */}
+          {currentBook && (
+            <div className="border-y border-gray-200 py-4 dark:border-gray-800">
+              <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
+                {t('timeline.current_book_progress')}
+              </h3>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                    {t('timeline.pages_read')}
+                  </p>
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                    {pagesRead} / {totalPages}
+                    {isEstimated ? ' ~' : ''}
+                  </p>
+                </div>
+                <div className="h-2 rounded-full bg-gray-200 dark:bg-gray-700">
+                  <div
+                    className="bg-primary h-2 rounded-full transition-all"
+                    style={{ width: `${progress}%` }}
+                  ></div>
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-0.5">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                    {t('timeline.avg_speed')}
+                  </p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {avgSpeedDisplay} pgs/hr
+                  </p>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                    {t('timeline.est_finish')}
+                  </p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {estFinishHours > 0 || estFinishMins > 0
+                      ? `~${estFinishHours}h ${estFinishMins}m`
+                      : 'N/A'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Reading Calendar */}
+          <div>
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                {t('timeline.reading_calendar')}
+              </h3>
+              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <span>{t('timeline.less')}</span>
+                <div className="flex gap-1">
+                  <div className="size-2.5 rounded-sm bg-gray-200 dark:bg-gray-700"></div>
+                  <div className="bg-primary/20 size-2.5 rounded-sm"></div>
+                  <div className="bg-primary/40 size-2.5 rounded-sm"></div>
+                  <div className="bg-primary/70 size-2.5 rounded-sm"></div>
+                  <div className="bg-primary size-2.5 rounded-sm"></div>
+                </div>
+                <span>{t('timeline.more')}</span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              {/* Month labels row */}
+              <div
+                className="grid gap-0.5 text-center text-[10px] text-gray-500 dark:text-gray-400"
+                style={{
+                  gridTemplateColumns: `1.5rem repeat(${numberOfWeeks}, 1fr)`,
+                }}
+              >
+                <div></div>
+                {monthLabels.map((label, idx) => (
+                  <span
+                    key={idx}
+                    style={{ gridColumn: label.col + 1 }}
+                    className="text-left"
+                  >
+                    {label.month}
+                  </span>
+                ))}
+              </div>
+              {/* Heatmap grid with day labels */}
+              <div
+                className="grid-rows-7 grid gap-0.5"
+                style={{
+                  gridTemplateColumns: `1.5rem repeat(${numberOfWeeks}, 1fr)`,
+                }}
+              >
+                {/* Day labels in first column */}
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
+                  <span
+                    key={day + idx}
+                    className="self-center pr-1 text-right text-[10px] text-gray-500 dark:text-gray-400"
+                    style={{ gridColumn: 1, gridRow: idx + 1 }}
+                  >
+                    {day}
+                  </span>
+                ))}
+                {/* Heatmap cells */}
+                {heatmapGrid.map((cell) => (
+                  <div
+                    key={cell.date}
+                    className={`size-2.5 rounded-sm ${getIntensityClass(
+                      cell.intensity,
+                    )}`}
+                    style={{ gridColumn: cell.col + 1, gridRow: cell.row }}
+                    title={`${cell.date}: ${heatmapData[cell.date] || 0} min`}
+                  ></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

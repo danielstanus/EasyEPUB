@@ -1,37 +1,41 @@
 import { Overlay } from '@literal-ui/core'
 import clsx from 'clsx'
-import { ComponentProps, useEffect, useState } from 'react'
-import { useMemo } from 'react'
+import { ComponentProps, useEffect, useMemo, useState } from 'react'
 import { IconType } from 'react-icons'
 import {
   MdFormatUnderlined,
-  MdOutlineImage,
+  MdImage,
   MdSearch,
   MdToc,
   MdTimeline,
-  MdOutlineLightMode,
+  MdPalette,
+  MdTextFields,
+  MdSelfImprovement,
+  MdLibraryBooks,
 } from 'react-icons/md'
-import { RiFontSize, RiHome6Line, RiSettings5Line } from 'react-icons/ri'
+import { RiHome6Line, RiSettings5Line } from 'react-icons/ri'
 import { useRecoilState } from 'recoil'
 
 import {
   Env,
-  Action,
   useAction,
   useBackground,
   useColorScheme,
   useMobile,
   useSetAction,
   useTranslation,
+  useZenModeHandler,
 } from '../hooks'
+import type { Action } from '../hooks'
 import { reader, useReaderSnapshot } from '../models'
-import { navbarState } from '../state'
+import { navbarState, useZenMode } from '../state'
 import { activeClass } from '../styles'
 
 import { SplitView, useSplitViewItem } from './base'
 import { Settings } from './pages'
 import { AnnotationView } from './viewlets/AnnotationView'
 import { ImageView } from './viewlets/ImageView'
+import { LibrarySideView } from './viewlets/LibrarySideView'
 import { SearchView } from './viewlets/SearchView'
 import { ThemeView } from './viewlets/ThemeView'
 import { TimelineView } from './viewlets/TimelineView'
@@ -40,7 +44,8 @@ import { TypographyView } from './viewlets/TypographyView'
 
 export const Layout: React.FC = ({ children }) => {
   useColorScheme()
-
+  useZenModeHandler()
+  const [isZenMode] = useZenMode()
   const [ready, setReady] = useState(false)
   const setAction = useSetAction()
   const mobile = useMobile()
@@ -54,9 +59,9 @@ export const Layout: React.FC = ({ children }) => {
   return (
     <div id="layout" className="select-none">
       <SplitView>
-        {mobile === false && <ActivityBar />}
-        {mobile === true && <NavigationBar />}
-        {ready && <SideBar />}
+        {!isZenMode && mobile === false && <ActivityBar />}
+        {!isZenMode && mobile === true && <NavigationBar />}
+        {!isZenMode && ready && <SideBar />}
         {ready && <Reader>{children}</Reader>}
       </SplitView>
     </div>
@@ -75,6 +80,13 @@ interface IViewAction extends IAction {
 }
 
 const viewActions: IViewAction[] = [
+  {
+    name: 'books',
+    title: 'books',
+    Icon: MdLibraryBooks,
+    View: LibrarySideView,
+    env: Env.Desktop | Env.Mobile,
+  },
   {
     name: 'toc',
     title: 'toc',
@@ -99,7 +111,7 @@ const viewActions: IViewAction[] = [
   {
     name: 'image',
     title: 'image',
-    Icon: MdOutlineImage,
+    Icon: MdImage,
     View: ImageView,
     env: Env.Desktop,
   },
@@ -113,14 +125,14 @@ const viewActions: IViewAction[] = [
   {
     name: 'typography',
     title: 'typography',
-    Icon: RiFontSize,
+    Icon: MdTextFields,
     View: TypographyView,
     env: Env.Desktop | Env.Mobile,
   },
   {
     name: 'theme',
     title: 'theme',
-    Icon: MdOutlineLightMode,
+    Icon: MdPalette,
     View: ThemeView,
     env: Env.Desktop | Env.Mobile,
   },
@@ -147,6 +159,8 @@ interface EnvActionBarProps extends ComponentProps<'div'> {
 function ViewActionBar({ className, env }: EnvActionBarProps) {
   const [action, setAction] = useAction()
   const t = useTranslation()
+  const [isZenMode] = useZenMode()
+  const { toggleZenMode } = useZenModeHandler()
 
   return (
     <ActionBar className={className}>
@@ -164,6 +178,12 @@ function ViewActionBar({ className, env }: EnvActionBarProps) {
             />
           )
         })}
+      <Action
+        title={t('zen.title')}
+        Icon={MdSelfImprovement}
+        active={isZenMode}
+        onClick={toggleZenMode}
+      />
     </ActionBar>
   )
 }
@@ -288,40 +308,59 @@ const SideBar: React.FC = () => {
   const [action, setAction] = useAction()
   const mobile = useMobile()
   const t = useTranslation()
+  const [renderedAction, setRenderedAction] = useState(action)
 
   const { size } = useSplitViewItem(SideBar, {
-    preferredSize: 240,
-    minSize: 160,
-    visible: !!action,
+    preferredSize: action ? 240 : 0,
+    minSize: 0,
+    visible: true, // Let it be draggable even when closed
   })
+
+  useEffect(() => {
+    if (action) {
+      setRenderedAction(action)
+    }
+  }, [action])
+
+  const onTransitionEnd = () => {
+    if (!action) {
+      setRenderedAction(undefined)
+    }
+  }
+
+  const CurrentView = useMemo(
+    () => viewActions.find((v) => v.name === renderedAction)?.View,
+    [renderedAction],
+  )
 
   return (
     <>
       {action && mobile && <Overlay onClick={() => setAction(undefined)} />}
       <div
         className={clsx(
-          'SideBar bg-surface flex flex-col',
-          !action && '!hidden',
+          'SideBar bg-surface flex flex-col overflow-hidden transition-all duration-200 ease-in-out',
           mobile ? 'absolute inset-y-0 right-0 z-10' : '',
         )}
         style={{ width: mobile ? '75%' : size }}
+        onTransitionEnd={onTransitionEnd}
       >
-        {viewActions.map(({ name, title, View }) => (
-          <View
-            key={name}
-            name={t(`${name}.title`)}
-            title={t(`${title}.title`)}
-            className={clsx(name !== action && '!hidden')}
+        {CurrentView && (
+          <CurrentView
+            name={t(`${renderedAction}.title`)}
+            title={t(`${renderedAction}.title`)}
           />
-        ))}
+        )}
       </div>
     </>
   )
 }
 
 interface ReaderProps extends ComponentProps<'div'> {}
-const Reader: React.FC = ({ className, ...props }: ReaderProps) => {
-  useSplitViewItem(Reader)
+const Reader: React.FC<ReaderProps> = ({
+  className,
+  ...props
+}: ReaderProps) => {
+  const { size } = useSplitViewItem(Reader, { visible: true })
   const [bg] = useBackground()
 
   const r = useReaderSnapshot()
@@ -334,6 +373,11 @@ const Reader: React.FC = ({ className, ...props }: ReaderProps) => {
         readMode || 'mb-12 sm:mb-0',
         bg,
       )}
+      style={{
+        transform: 'translateZ(0)',
+        minWidth: 0,
+        ...(size && { width: size }),
+      }}
       {...props}
     />
   )

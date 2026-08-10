@@ -1,88 +1,103 @@
-<h1 align="center"><a href="https://flowoss.com">Flow - Open Source Software (OSS)</a></h1>
+<div align="center">
 
-<h2 align="center">Redefine ePub reader</h2>
+  <!-- Logo -->
+  <img src="assets/icon.svg" alt="Lumen Read Logo" width="120" height="120" />
 
-<p align="center">Free. Open source. Browser-based.</p>
+# Lumen Read
 
-<p align="center"><img src="apps/website/public/screenshots/01.webp"/>
+### A modern, immersive EPUB reader for productivity and focus.
 
-</p>
+<p align="center"><img src="apps/website/public/screenshots/01.webp"/></p>
 
-## Features
 
-- Grid layout
-- Search in book
-- Image preview
-- Custom typography
-- Highlight and Annotation
-- Theme
-- Share/Download book with link
-- Data export
-- Cloud storage
+  <!-- Badges -->
+  <p>
+    <img src="https://img.shields.io/badge/License-AGPL%20v3-blue.svg" alt="License: AGPL v3" />
+    <img src="https://img.shields.io/badge/Built%20with-Google%20Antigravity-blue.svg" alt="Built with: Google Antigravity" />
+    <img src="https://img.shields.io/badge/Model-Gemini%203-purple.svg" alt="Model: Gemini 3" />
+    <img src="https://img.shields.io/badge/Style-Material%20Design%203-orange.svg" alt="Style: Material Design 3" />
+  </p>
 
-For planed features, see our [roadmap](https://pacexy.notion.site/283696d0071c43bfb03652e8e5f47936?v=b43f4dd7a3cb4ce785d6c32b698a8ff5).
+---
 
-## Development
+## 📸 Showcase
 
-### Prerequisites
+<div align="center">
+  
+  <!-- Screenshot 1 -->
+  <img src="assets/library.png" alt="Library Grid" width="800" />
+  <p><em>A beautiful grid view for your collection.</em></p>
 
-- [Node.js](https://nodejs.org)
-- [pnpm](https://pnpm.io/installation)
-- [Git](https://git-scm.com/downloads)
+  <br />
 
-### Clone the repo
+  <!-- Screenshot 2 -->
+  <img src="assets/analytics.png" alt="Reading Analytics" width="800" />
+  <p><em>Track your habits with heatmaps and streaks.</em></p>
+
+  <br />
+
+  <!-- Screenshot 3 -->
+  <img src="assets/darkmode.png" alt="Smart Dark Mode" width="800" />
+  <p><em>Eye-friendly reading at night.</em></p>
+
+</div>
+
+---
+
+## ✨ Features
+
+**Lumen Read** transforms your reading experience with features designed for flow:
+
+- 🔥 **Reading Analytics:** Visualize your progress with a GitHub-style **Heatmap Calendar** and keep your momentum with **Streak tracking**.
+- 🎨 **Dynamic Theming:** The entire UI (including the logo!) adapts to your chosen color, powered by Material Design 3.
+- 🌑 **Smart Inversion:** A sophisticated dark mode that respects book imagery while saving your eyes.
+
+---
+
+## 🚀 Installation & Usage
+
+### 📥 Installation (Manual)
+
+Currently, Lumen Read is available via manual installation. It takes 30 seconds!
+
+1. **Download** the latest `Lumen-chrome.zip` from the [Releases Page](https://github.com/Zolangui/Lumen-Read/releases).
+2. **Unzip** the file to a folder.
+3. Open Chrome/Edge/Brave and go to `chrome://extensions`.
+4. Toggle **Developer mode** (top right corner).
+5. Click **Load unpacked**.
+6. Select the unzipped folder.
+
+🎉 Done! The extension is now installed.
+
+### Development
+
+To run the project locally:
 
 ```bash
-git clone https://github.com/pacexy/flow
-```
+# Install dependencies
+pnpm install
 
-### Install the dependencies
-
-```bash
-pnpm i
-```
-
-### Setup the environment variables
-
-Copy and rename all `.env.local.example`s to `.env.local` and setup the environment variables.
-
-### Run the apps
-
-```bash
+# Start the development server
 pnpm dev
 ```
 
-## Self-hosting
+### Loading in Chrome
 
-Before self-hosting, you should [setup the environment variables](#setup-the-environment-variables).
+1.  Build the extension:
+    ```bash
+    pnpm build:ext:chrome
+    ```
+2.  Open Chrome and navigate to `chrome://extensions`.
+3.  Enable **Developer mode** (top right).
+4.  Click **Load unpacked**.
+5.  Select the `apps/extension/dist` directory.
 
-### Docker
+---
 
-You can use docker-compose:
+## 🤝 Credits
 
-```sh
-docker compose up -d
-```
+**Lumen Read** is an enhanced fork of the [Flow](https://github.com/pacexy/flow) project.
 
-Or build the image and run it manually:
+> _Refactored and reimagined using **Google Antigravity & Gemini 3**._
 
-```sh
-docker build -t flow .
-docker run -p 3000:3000 --env-file apps/reader/.env.local flow
-```
-
-## Contributing
-
-There are many ways in which you can participate in this project, for example:
-
-- [Submit bugs and feature requests](https://github.com/pacexy/flow/issues/new), and help us verify as they are checked in
-- [Submit pull requests](https://github.com/pacexy/flow/pulls)
-
-## Credits
-
-- [Epub.js](https://github.com/futurepress/epub.js/)
-- [React](https://github.com/facebook/react)
-- [Next.js](https://nextjs.org/)
-- [TypeScript](https://www.typescriptlang.org)
-- [Vercel](https://vercel.com)
-- [Turborepo](https://turbo.build/repo)
+---

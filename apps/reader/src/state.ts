@@ -27,9 +27,20 @@ export const navbarState = atom<boolean>({
   default: false,
 })
 
+export const zenModeState = atom<boolean>({
+  key: 'zen',
+  default: false,
+  effects: [localStorageEffect<boolean>('zen', false)],
+})
+
+export function useZenMode() {
+  return useRecoilState(zenModeState)
+}
+
 export interface Settings extends TypographyConfiguration {
   theme?: ThemeConfiguration
   enableTextSelectionMenu?: boolean
+  locale?: string
 }
 
 export interface TypographyConfiguration {
@@ -39,6 +50,7 @@ export interface TypographyConfiguration {
   lineHeight?: number
   spread?: RenditionSpread
   zoom?: number
+  contentWidthPercent?: number
 }
 
 interface ThemeConfiguration {
@@ -56,4 +68,22 @@ const settingsState = atom<Settings>({
 
 export function useSettings() {
   return useRecoilState(settingsState)
+}
+
+export interface LibraryState {
+  viewMode: 'grid' | 'list'
+  filter: 'All' | 'Favorites' | 'Unread' | 'In Progress' | 'Finished'
+}
+
+export const libraryState = atom<LibraryState>({
+  key: 'library',
+  default: {
+    viewMode: 'grid',
+    filter: 'All',
+  },
+  effects: [localStorageEffect('library', { viewMode: 'grid', filter: 'All' })],
+})
+
+export function useLibraryState() {
+  return useRecoilState(libraryState)
 }
