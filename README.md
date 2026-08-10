@@ -5,99 +5,88 @@
 
 # EasyEPUB
 
-### A modern, immersive EPUB reader for productivity and focus.
-
-<p align="center"><img src="apps/website/public/screenshots/01.webp"/></p>
-
+### Lector EPUB moderno, inmersivo y multiplataforma para lectura y productividad.
 
   <!-- Badges -->
   <p>
     <img src="https://img.shields.io/badge/License-AGPL%20v3-blue.svg" alt="License: AGPL v3" />
-    <img src="https://img.shields.io/badge/Built%20with-Google%20Antigravity-blue.svg" alt="Built with: Google Antigravity" />
-    <img src="https://img.shields.io/badge/Model-Gemini%203-purple.svg" alt="Model: Gemini 3" />
+    <img src="https://img.shields.io/badge/Platform-Web%20%7C%20Extension%20%7C%20Mobile-green.svg" alt="Platforms" />
     <img src="https://img.shields.io/badge/Style-Material%20Design%203-orange.svg" alt="Style: Material Design 3" />
   </p>
-
----
-
-## 📸 Showcase
-
-<div align="center">
-  
-  <!-- Screenshot 1 -->
-  <img src="assets/library.png" alt="Library Grid" width="800" />
-  <p><em>A beautiful grid view for your collection.</em></p>
-
-  <br />
-
-  <!-- Screenshot 2 -->
-  <img src="assets/analytics.png" alt="Reading Analytics" width="800" />
-  <p><em>Track your habits with heatmaps and streaks.</em></p>
-
-  <br />
-
-  <!-- Screenshot 3 -->
-  <img src="assets/darkmode.png" alt="Smart Dark Mode" width="800" />
-  <p><em>Eye-friendly reading at night.</em></p>
 
 </div>
 
 ---
 
-## ✨ Features
+## 📸 Capturas de Pantalla
 
-**EasyEPUB** transforms your reading experience with features designed for flow:
+<div align="center">
+  
+  <!-- Screenshot 1 -->
+  <img src="assets/library.png" alt="Vista de Biblioteca" width="800" />
+  <p><em>Vista en cuadrícula elegante para tu biblioteca personal.</em></p>
 
-- 🔥 **Reading Analytics:** Visualize your progress with a GitHub-style **Heatmap Calendar** and keep your momentum with **Streak tracking**.
-- 🎨 **Dynamic Theming:** The entire UI (including the logo!) adapts to your chosen color, powered by Material Design 3.
-- 🌑 **Smart Inversion:** A sophisticated dark mode that respects book imagery while saving your eyes.
+  <br />
+
+  <!-- Screenshot 2 -->
+  <img src="assets/analytics.png" alt="Estadísticas de Lectura" width="800" />
+  <p><em>Mide tu progreso con mapa de calor estilo GitHub y contador de rachas.</em></p>
+
+  <br />
+
+  <!-- Screenshot 3 -->
+  <img src="assets/darkmode.png" alt="Modo Oscuro Inteligente" width="800" />
+  <p><em>Lectura cómoda por la noche cuidando tu vista e imágenes.</em></p>
+
+</div>
 
 ---
 
-## 🚀 Installation & Usage
+## ✨ Características Principales
 
-### 📥 Installation (Manual)
+**EasyEPUB** transforma tu experiencia de lectura combinando flexibilidad, estética y rendimiento:
 
-Currently, EasyEPUB is available via manual installation. It takes 30 seconds!
+- ☁️ **Sincronización Completa con Google Drive:** Guarda y restaura tanto tus metadatos (progreso, notas, favoritos) como los propios **archivos `.epub`** en tu Drive privado (`appDataFolder`).
+- 🎨 **Selector de Fuentes Avanzado:** Buscador integrado con vista previa en tiempo real de cada tipografía y acceso a fuentes del sistema.
+- 🔥 **Estadísticas & Hábitos de Lectura:** Visualiza tu constancia con un **Mapa de calor (Heatmap)** estilo GitHub y mantiene tu motivación con el **Contador de rachas (Streaks)**.
+- 🧘 **Modo Zen & Audio Ambiental:** Modo de lectura a pantalla completa sin distracciones e integrador de ruido rosa (pink noise) para máxima concentración.
+- 📖 **Experiencia de Lectura Adaptativa:** Lectura en página individual o doble página, tabla de contenidos interactiva, extractor de imágenes y resaltador de texto con notas.
+- 📚 **Organización de Biblioteca:** Filtra por favoritos, no leídos o en progreso, y reordena tus libros mediante arrastrar y soltar (drag & drop).
+- 🌓 **Modo Oscuro Inteligente & Material Design 3:** Interfaz adaptativa con inversión inteligente que protege las ilustraciones de tus libros.
+- 🔌 **Web & Extensión de Navegador:** Funciona tanto en el navegador como extensión para Chrome y Firefox.
 
-1. **Download** the latest `EasyEPUB-chrome.zip` from the [Releases Page](https://github.com/Zolangui/Lumen-Read/releases).
-2. **Unzip** the file to a folder.
-3. Open Chrome/Edge/Brave and go to `chrome://extensions`.
-4. Toggle **Developer mode** (top right corner).
-5. Click **Load unpacked**.
-6. Select the unzipped folder.
+---
 
-🎉 Done! The extension is now installed.
+## 🚀 Instalación y Uso
 
-### Development
-
-To run the project locally:
+### 🖥️ Desarrollo Local
 
 ```bash
-# Install dependencies
+# 1. Instalar dependencias
 pnpm install
 
-# Start the development server
-pnpm dev
+# 2. Iniciar el servidor de desarrollo del lector (puerto 7127)
+pnpm --filter @flow/reader dev
 ```
 
-### Loading in Chrome
+### 🧩 Extensión para Navegadores (Chrome / Edge / Firefox)
 
-1.  Build the extension:
-    ```bash
-    pnpm build:ext:chrome
-    ```
-2.  Open Chrome and navigate to `chrome://extensions`.
-3.  Enable **Developer mode** (top right).
-4.  Click **Load unpacked**.
-5.  Select the `apps/extension/dist` directory.
+1. Compilar la extensión:
+   ```bash
+   # Para Chrome
+   pnpm build:ext:chrome
+
+   # Para Firefox
+   pnpm build:ext:firefox
+   ```
+2. Abre `chrome://extensions` en tu navegador.
+3. Activa el **Modo de desarrollador** (arriba a la derecha).
+4. Haz clic en **Cargar descomprimida** y selecciona la carpeta `apps/extension/dist`.
 
 ---
 
-## 🤝 Credits
+## 🤝 Créditos
 
-**EasyEPUB** is an enhanced fork of the [Flow](https://github.com/pacexy/flow) project.
-
-> _Refactored and reimagined using **Google Antigravity & Gemini 3**._
+**EasyEPUB** es un fork mejorado y evolucionado basado en el proyecto [Flow](https://github.com/pacexy/flow) y [Lumen-Read](https://github.com/Zolangui/Lumen-Read).
 
 ---
