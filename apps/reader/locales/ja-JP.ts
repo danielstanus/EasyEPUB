@@ -40,7 +40,6 @@ export default {
   'typography.content_width': '内容の幅 (%)',
   'typography.zoom': 'ズーム',
   'typography.reset_to_global': 'グローバル設定に戻す',
-  'typography.default': 'デフォルト',
 
   'theme.title': 'テーマ',
   'audio.title': 'アンビエンス',

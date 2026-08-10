@@ -40,7 +40,6 @@ export default {
   'typography.content_width': '内容宽度 (%)',
   'typography.zoom': '缩放',
   'typography.reset_to_global': '重置为全局设置',
-  'typography.default': '默认',
 
   'theme.title': '颜色主题',
   'audio.title': '氛围',

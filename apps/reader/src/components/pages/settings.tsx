@@ -4,7 +4,6 @@ import { useRouter } from 'next/router'
 import { destroyCookie, parseCookies } from 'nookies'
 import React, { useState } from 'react'
 
-import { db } from '@flow/reader/db'
 import {
   EpubSyncProgress,
   fullSyncFromGDrive,

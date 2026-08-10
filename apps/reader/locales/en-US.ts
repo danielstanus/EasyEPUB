@@ -40,7 +40,6 @@ export default {
   'typography.content_width': 'Content Width (%)',
   'typography.zoom': 'Zoom',
   'typography.reset_to_global': 'Reset to Global',
-  'typography.default': 'Default',
 
   'theme.title': 'Theme',
   'audio.title': 'Ambience',
