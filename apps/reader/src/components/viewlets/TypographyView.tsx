@@ -10,6 +10,11 @@ import { PaneViewProps } from '../base'
 
 // Fonts bundled / well-known, always shown at the top
 const PINNED_FONTS = [
+  'Open Sans',
+  'PT Serif',
+  'Domine',
+  'Lato',
+  'Arbutus Slab',
   'Roboto',
   'Roboto Serif',
   'Literata',

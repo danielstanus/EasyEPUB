@@ -183,8 +183,25 @@ export default {
 
   // Theme View
   'theme.header': '主题',
+  'theme.presets': '主题预设',
   'theme.source_color_label': '源色',
   'theme.background_color_label': '背景色',
+  'theme.text_color_label': '文字颜色',
+  'theme.preview': '预览',
+  'theme.preset.light': '浅色',
+  'theme.preset.dark': '深色',
+  'theme.preset.night': '夜间',
+  'theme.preset.sepia': '羊皮纸',
+  'theme.preset.gray': '灰色',
+  'theme.preset.mint': '薄荷',
+  'theme.color.white': '白色',
+  'theme.color.black': '黑色',
+  'theme.color.graphite': '石墨',
+  'theme.color.sepia': '羊皮纸',
+  'theme.color.gray': '灰色',
+  'theme.color.mint': '薄荷',
+  'theme.color.off_white': '米白',
+  'theme.color.sepia_dark': '深棕',
 
   untitled: '未标题',
 } as const

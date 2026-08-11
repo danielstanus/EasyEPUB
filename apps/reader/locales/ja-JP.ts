@@ -188,8 +188,25 @@ export default {
 
   // Theme View
   'theme.header': 'テーマ',
+  'theme.presets': 'テーマプリセット',
   'theme.source_color_label': 'ソースカラー',
   'theme.background_color_label': '背景色',
+  'theme.text_color_label': '文字色',
+  'theme.preview': 'プレビュー',
+  'theme.preset.light': 'ライト',
+  'theme.preset.dark': 'ダーク',
+  'theme.preset.night': 'ナイト',
+  'theme.preset.sepia': 'セピア',
+  'theme.preset.gray': 'グレー',
+  'theme.preset.mint': 'ミント',
+  'theme.color.white': '白',
+  'theme.color.black': '黒',
+  'theme.color.graphite': 'グラファイト',
+  'theme.color.sepia': 'セピア',
+  'theme.color.gray': 'グレー',
+  'theme.color.mint': 'ミント',
+  'theme.color.off_white': 'オフホワイト',
+  'theme.color.sepia_dark': 'ダークセピア',
 
   untitled: '無題',
 } as const

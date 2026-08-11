@@ -3,6 +3,8 @@ import { atom, AtomEffect, useRecoilState } from 'recoil'
 
 import { RenditionSpread } from '@flow/epubjs/types/rendition'
 
+import { ThemePresetId } from './themes'
+
 function localStorageEffect<T>(key: string, defaultValue: T): AtomEffect<T> {
   return ({ setSelf, onSet }) => {
     if (IS_SERVER) return
@@ -53,9 +55,12 @@ export interface TypographyConfiguration {
   contentWidthPercent?: number
 }
 
-interface ThemeConfiguration {
+export interface ThemeConfiguration {
   source?: string
   background?: number
+  preset?: ThemePresetId
+  backgroundColor?: string
+  textColor?: string
 }
 
 export const defaultSettings: Settings = {}

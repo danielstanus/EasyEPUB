@@ -18,6 +18,7 @@ import {
   useColorScheme,
   useDisablePinchZooming,
   useMobile,
+  useReaderColors,
   useSync,
   useTypography,
   useTranslation,
@@ -185,7 +186,8 @@ function BookPane({ tab, onMouseDown, active }: BookPaneProps) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const typography = useTypography(tab)
   const { dark } = useColorScheme()
-  const [background, , backgroundColor] = useBackground()
+  const [background] = useBackground()
+  const { backgroundColor, customTextColor } = useReaderColors()
   const { contentWidthPercent } = typography
   const [, setAction] = useAction()
 
@@ -386,14 +388,18 @@ function BookPane({ tab, onMouseDown, active }: BookPaneProps) {
 
   useEffect(() => {
     if (dark === undefined) return
-    // set `!important` when in dark mode
-    const color = dark ? '#bfc8ca' : '#3f484a'
-    rendition?.themes.override('color', color, dark)
+    // an explicit theme text color always wins; otherwise keep the previous
+    // behavior of only forcing the light-gray color in dark mode
+    if (customTextColor) {
+      rendition?.themes.override('color', customTextColor, true)
+    } else if (dark) {
+      rendition?.themes.override('color', '#bfc8ca', true)
+    }
 
     if (backgroundColor) {
       rendition?.themes.override('background-color', backgroundColor, true)
     }
-  }, [rendition, dark, backgroundColor])
+  }, [rendition, dark, backgroundColor, customTextColor])
 
   // Force resize after initial render
   useEffect(() => {

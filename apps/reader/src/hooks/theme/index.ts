@@ -1,4 +1,5 @@
 export * from './useBackground'
 export * from './useColorScheme'
+export * from './useReaderColors'
 export * from './useSourceColor'
 export * from './useTheme'

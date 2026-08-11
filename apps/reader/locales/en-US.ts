@@ -187,8 +187,25 @@ export default {
 
   // Theme View
   'theme.header': 'Theme',
+  'theme.presets': 'Theme Presets',
   'theme.source_color_label': 'Source Color',
   'theme.background_color_label': 'Background Color',
+  'theme.text_color_label': 'Text Color',
+  'theme.preview': 'Preview',
+  'theme.preset.light': 'Light',
+  'theme.preset.dark': 'Dark',
+  'theme.preset.night': 'Night',
+  'theme.preset.sepia': 'Sepia',
+  'theme.preset.gray': 'Gray',
+  'theme.preset.mint': 'Mint',
+  'theme.color.white': 'White',
+  'theme.color.black': 'Black',
+  'theme.color.graphite': 'Graphite',
+  'theme.color.sepia': 'Sepia',
+  'theme.color.gray': 'Gray',
+  'theme.color.mint': 'Mint',
+  'theme.color.off_white': 'Off-White',
+  'theme.color.sepia_dark': 'Sepia Dark',
 
   untitled: 'Untitled',
 } as const
