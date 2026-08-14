@@ -40,9 +40,11 @@ export default {
   'typography.content_width': '内容の幅 (%)',
   'typography.zoom': 'ズーム',
   'typography.reset_to_global': 'グローバル設定に戻す',
+  'typography.search_fonts': 'フォントを検索…',
 
   'theme.title': 'テーマ',
   'audio.title': 'アンビエンス',
+  'zen.title': '禅モード',
   'theme.source_color': 'ソースカラー',
   'theme.background_color': '背景色',
 
@@ -118,6 +120,7 @@ export default {
   'books.search_placeholder': '本を検索...',
   'books.unknown_author': '不明な著者',
   'books.progress': '進捗',
+  'books.open_in_tab': 'タブで開く',
 
   // Sidebar
   'sidebar.toc': '目次',
@@ -207,6 +210,8 @@ export default {
   'theme.color.mint': 'ミント',
   'theme.color.off_white': 'オフホワイト',
   'theme.color.sepia_dark': 'ダークセピア',
+
+  'error.generic': 'エラーが発生しました。',
 
   untitled: '無題',
 } as const

@@ -1,5 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react'
 
+import locales, { detectLocale } from '../../locales'
+
 interface Props {
   children?: ReactNode
 }
@@ -24,7 +26,9 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public render() {
     if (this.state.hasError) {
-      return <h1>Sorry.. there was an error</h1>
+      // @ts-ignore
+      const message = locales[detectLocale()]['error.generic']
+      return <h1>{message}</h1>
     }
 
     return this.props.children

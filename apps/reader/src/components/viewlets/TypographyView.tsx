@@ -55,6 +55,7 @@ const FontPicker: React.FC<FontPickerProps> = ({
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLUListElement>(null)
   const [highlighted, setHighlighted] = useState(0)
+  const t = useTranslation('typography')
 
   // Build full list: pinned first, then local (deduplicated)
   const allFonts = Array.from(
@@ -181,7 +182,7 @@ const FontPicker: React.FC<FontPickerProps> = ({
                 ref={inputRef}
                 type="text"
                 value={query}
-                placeholder="Search fonts…"
+                placeholder={t('search_fonts')}
                 className="w-full bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none dark:text-white"
                 onChange={(e) => {
                   setQuery(e.target.value)

@@ -40,6 +40,7 @@ export default {
   'typography.content_width': 'Content Width (%)',
   'typography.zoom': 'Zoom',
   'typography.reset_to_global': 'Reset to Global',
+  'typography.search_fonts': 'Search fonts…',
 
   'theme.title': 'Theme',
   'audio.title': 'Ambience',
@@ -118,6 +119,7 @@ export default {
   'books.search_placeholder': 'Search books...',
   'books.unknown_author': 'Unknown Author',
   'books.progress': 'Progress',
+  'books.open_in_tab': 'Open in tab',
 
   // Sidebar
   'sidebar.toc': 'Table of Contents',
@@ -206,6 +208,8 @@ export default {
   'theme.color.mint': 'Mint',
   'theme.color.off_white': 'Off-White',
   'theme.color.sepia_dark': 'Sepia Dark',
+
+  'error.generic': 'Something went wrong.',
 
   untitled: 'Untitled',
 } as const

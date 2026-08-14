@@ -301,17 +301,44 @@ function BookPane({ tab, onMouseDown, active }: BookPaneProps) {
     // Smart Color Inversion for Dark Mode
     if (contents) {
       const doc = contents.document
-      const elements = doc.querySelectorAll(
-        'p, span, h1, h2, h3, h4, h5, h6, div, a, li, blockquote',
-      )
+      // Iterate every element instead of a hard-coded tag list: real books
+      // style titles and body text with tags like strong, em, b, td, th,
+      // code, pre, caption… which were left black and unreadable on dark
+      // themes before.
+      const elements = doc.querySelectorAll('*')
 
       if (dark) {
-        // Dark mode: invert dark colors to light
+        // Dark mode: lift dark text to a light gray and dim light
+        // backgrounds so nothing becomes invisible on a dark theme.
         const themeColor = '#bfc8ca' // Light gray for dark mode
+        const themeBackground = '#374151' // gray-700 for light boxes
+
+        // WCAG relative luminance — catches near-black titles that a naive
+        // per-channel threshold (e.g. < 100) would miss.
+        const luminance = (r: number, g: number, b: number) => {
+          const lin = (v: number) => {
+            const s = v / 255
+            return s <= 0.03928
+              ? s / 12.92
+              : Math.pow((s + 0.055) / 1.055, 2.4)
+          }
+          return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+        }
+        const isDarkText = (r: number, g: number, b: number) => {
+          // Keep colored accents (links, highlights) intact: only lift colors
+          // that are dark AND low-saturation.
+          const max = Math.max(r, g, b)
+          const min = Math.min(r, g, b)
+          const saturation = max === 0 ? 0 : (max - min) / max
+          return luminance(r, g, b) < 0.25 && saturation < 0.35
+        }
 
         elements.forEach((el: Element) => {
           const htmlEl = el as HTMLElement
-          const computedStyle = window.getComputedStyle(htmlEl)
+          // Compute against the iframe document's window, not the parent's
+          const computedStyle = doc.defaultView?.getComputedStyle(htmlEl)
+          if (!computedStyle) return
+
           const color = computedStyle.color
 
           // Parse RGB
@@ -319,9 +346,7 @@ function BookPane({ tab, onMouseDown, active }: BookPaneProps) {
           if (rgb && rgb.length >= 3) {
             const [r, g, b] = rgb.map(Number)
 
-            // Check if color is dark (e.g., close to black)
-            // Threshold can be adjusted, < 100 is a safe bet for "dark text"
-            if (r < 100 && g < 100 && b < 100) {
+            if (isDarkText(r, g, b)) {
               htmlEl.style.setProperty('color', themeColor, 'important')
             }
           }
@@ -335,7 +360,7 @@ function BookPane({ tab, onMouseDown, active }: BookPaneProps) {
             if (r > 200 && g > 200 && b > 200) {
               htmlEl.style.setProperty(
                 'background-color',
-                '#374151', // gray-700
+                themeBackground,
                 'important',
               )
             }

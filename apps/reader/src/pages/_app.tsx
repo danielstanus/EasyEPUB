@@ -9,6 +9,8 @@ import { RecoilRoot } from 'recoil'
 
 import { Layout, Theme } from '../components'
 
+import locales, { detectLocale } from '../../locales'
+
 export default function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter()
 
@@ -29,5 +31,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
 }
 
 const Fallback: React.FC = () => {
-  return <div>Something went wrong.</div>
+  // @ts-ignore
+  const message = locales[detectLocale()]['error.generic']
+  return <div>{message}</div>
 }

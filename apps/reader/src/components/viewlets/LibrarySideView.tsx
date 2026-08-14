@@ -135,7 +135,7 @@ export const LibrarySideView: React.FC<PaneViewProps> = () => {
                   {isOpen && (
                     <div
                       className="bg-primary h-2 w-2 shrink-0 rounded-full"
-                      title="Open in tab"
+                      title={t('books.open_in_tab')}
                     />
                   )}
                 </div>

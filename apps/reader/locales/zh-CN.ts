@@ -40,9 +40,11 @@ export default {
   'typography.content_width': '内容宽度 (%)',
   'typography.zoom': '缩放',
   'typography.reset_to_global': '重置为全局设置',
+  'typography.search_fonts': '搜索字体…',
 
   'theme.title': '颜色主题',
   'audio.title': '氛围',
+  'zen.title': '禅模式',
   'theme.source_color': '源色',
   'theme.background_color': '背景色',
 
@@ -115,6 +117,7 @@ export default {
   'books.search_placeholder': '搜索书籍...',
   'books.unknown_author': '未知作者',
   'books.progress': '进度',
+  'books.open_in_tab': '在新标签页打开',
 
   // Sidebar
   'sidebar.toc': '目录',
@@ -202,6 +205,8 @@ export default {
   'theme.color.mint': '薄荷',
   'theme.color.off_white': '米白',
   'theme.color.sepia_dark': '深棕',
+
+  'error.generic': '出了点问题。',
 
   untitled: '未标题',
 } as const

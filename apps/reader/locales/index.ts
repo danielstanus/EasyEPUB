@@ -13,6 +13,26 @@ export const localeNames: Record<string, string> = {
   'es-ES': 'Español',
 }
 
+// Pick the closest supported locale: prefer the user's saved choice,
+// then fall back to the browser language.
+export function detectLocale(): string {
+  if (typeof window === 'undefined') return 'en-US'
+  try {
+    const saved = window.localStorage.getItem('settings')
+    if (saved) {
+      const { locale } = JSON.parse(saved)
+      if (locale && locale in localeNames) return locale
+    }
+  } catch {
+    // Ignore unreadable or malformed storage
+  }
+  const lang = (navigator.language || 'en-US').slice(0, 2).toLowerCase()
+  const match = Object.keys(localeNames).find(
+    (l) => l.slice(0, 2).toLowerCase() === lang,
+  )
+  return match ?? 'en-US'
+}
+
 // eslint-disable-next-line import/no-anonymous-default-export
 export default {
   'en-US': en_US,

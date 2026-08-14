@@ -45,3 +45,6 @@ reader_dev.log
 
 # Archives
 apps/*.zip
+
+**/examples/
+**/docs/
