@@ -10,6 +10,7 @@ export default function Document() {
         <GoogleTagManager />
         <link rel="icon" href="/icons/192.png"></link>
         {/* Self-hosted reading fonts, used by the font picker and book iframe */}
+        {/* eslint-disable-next-line @next/next/no-css-tags */}
         <link rel="stylesheet" href="/fonts/fonts.css" />
         <PWA />
         <PreventFlash />

@@ -7,9 +7,8 @@ import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 import { RecoilRoot } from 'recoil'
 
-import { Layout, Theme } from '../components'
-
 import locales, { detectLocale } from '../../locales'
+import { Layout, Theme } from '../components'
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter()
