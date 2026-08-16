@@ -91,14 +91,14 @@ function ReaderGroup({ index }: ReaderGroupProps) {
 
   return (
     <div
-      className="ReaderGroup flex flex-1 flex-col overflow-hidden focus:outline-none"
+      className="ReaderGroup flex flex-1 flex-col h-full min-h-0 overflow-hidden focus:outline-none"
       onMouseDown={handleMouseDown}
       style={{ width: size }}
     >
       {/* Tabs integrated into header - no separate Tab.List */}
 
       <DropZone
-        className={clsx('flex-1', isTouchScreen || 'h-0')}
+        className={clsx('flex-1 h-full min-h-0 flex flex-col', isTouchScreen || 'h-0')}
         split
         onDrop={async (e, position) => {
           // read `e.dataTransfer` first to avoid get empty value after `await`
@@ -165,7 +165,7 @@ interface PaneContainerProps {
 }
 const PaneContainer: React.FC<PaneContainerProps> = ({ active, children }) => {
   return (
-    <div className={clsx('h-full', active || 'hidden')}>
+    <div className={clsx('h-full w-full min-h-0 flex flex-col overflow-hidden', active || 'hidden')}>
       {React.Children.map(children, (child) =>
         React.isValidElement(child)
           ? React.cloneElement(child, { active } as any)
@@ -187,7 +187,7 @@ function BookPane({ tab, onMouseDown, active }: BookPaneProps) {
   const typography = useTypography(tab)
   const { dark } = useColorScheme()
   const [background] = useBackground()
-  const { backgroundColor, customTextColor } = useReaderColors()
+  const { backgroundColor, customTextColor, textColor } = useReaderColors()
   const { contentWidthPercent } = typography
   const [, setAction] = useAction()
 
@@ -296,7 +296,7 @@ function BookPane({ tab, onMouseDown, active }: BookPaneProps) {
   const applyCustomStyle = useCallback(() => {
     const contents = rendition?.getContents()[0]
     injectFonts(contents)
-    updateCustomStyle(contents, typography)
+    updateCustomStyle(contents, typography, textColor)
 
     // Smart Color Inversion for Dark Mode
     if (contents) {
@@ -308,9 +308,9 @@ function BookPane({ tab, onMouseDown, active }: BookPaneProps) {
       const elements = doc.querySelectorAll('*')
 
       if (dark) {
-        // Dark mode: lift dark text to a light gray and dim light
+        // Dark mode: lift dark text to a light gray / active text color and dim light
         // backgrounds so nothing becomes invisible on a dark theme.
-        const themeColor = '#bfc8ca' // Light gray for dark mode
+        const themeColor = textColor || '#bfc8ca'
         const themeBackground = '#374151' // gray-700 for light boxes
 
         // WCAG relative luminance — catches near-black titles that a naive
@@ -375,7 +375,7 @@ function BookPane({ tab, onMouseDown, active }: BookPaneProps) {
         })
       }
     }
-  }, [rendition, typography, dark])
+  }, [rendition, typography, dark, textColor])
 
   useEffect(() => {
     tab.onRender = applyCustomStyle
@@ -401,13 +401,14 @@ function BookPane({ tab, onMouseDown, active }: BookPaneProps) {
     setTimeout(() => centerContent(), 200)
   }, [typography.spread, rendition, centerContent])
 
-  // Apply centering when page turns (rendered changes)
+  // Apply centering and custom style when page turns (rendered changes)
   useEffect(() => {
     if (rendered) {
-      console.log('Page rendered, applying centering')
+      console.log('Page rendered, applying centering and style')
+      applyCustomStyle()
       setTimeout(() => centerContent(), 100)
     }
-  }, [rendered, centerContent])
+  }, [rendered, centerContent, applyCustomStyle])
 
   useEffect(() => applyCustomStyle(), [applyCustomStyle])
 

@@ -29,9 +29,12 @@ export const Settings: React.FC = () => {
   const t = useTranslation('settings')
 
   return (
-    <div className="h-full overflow-y-auto bg-white dark:bg-gray-900">
-      {/* Fixed Header */}
-      <div className="fixed top-0 left-0 right-0 z-10 flex h-16 items-center border-b border-gray-200 bg-white px-4 dark:border-gray-700 dark:bg-gray-900">
+    <div
+      className="h-full w-full overflow-y-auto overscroll-y-contain bg-white pb-24 dark:bg-gray-900"
+      style={{ WebkitOverflowScrolling: 'touch' }}
+    >
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-10 flex h-16 shrink-0 items-center border-b border-gray-200 bg-white px-4 dark:border-gray-700 dark:bg-gray-900">
         <button
           onClick={() => {
             if (reader.focusedGroup) {
@@ -47,7 +50,7 @@ export const Settings: React.FC = () => {
         </h1>
       </div>
 
-      <div className="mx-auto max-w-3xl px-6 py-8 pt-24">
+      <div className="mx-auto max-w-3xl px-6 py-8">
         <div className="space-y-8">
           {/* Language */}
           <div className="border-b border-gray-200 pb-8 dark:border-gray-700">

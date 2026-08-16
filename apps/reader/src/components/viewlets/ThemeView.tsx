@@ -78,7 +78,10 @@ export const ThemeView: React.FC<PaneViewProps> = () => {
         </div>
 
         {/* Content */}
-        <div className="flex-grow space-y-6 overflow-y-auto p-4">
+        <div
+          className="flex-grow space-y-6 overflow-y-auto overscroll-y-contain p-4 pb-16"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
           {/* Theme Presets */}
           <div>
             <label className="mb-2 block text-xs font-medium text-gray-500 dark:text-gray-400">

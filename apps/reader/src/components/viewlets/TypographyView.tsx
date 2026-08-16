@@ -355,8 +355,9 @@ export const TypographyView: React.FC<PaneViewProps> = () => {
 
         {/* Controls */}
         <div
-          className="flex-grow space-y-5 overflow-y-auto p-4"
+          className="flex-grow space-y-5 overflow-y-auto overscroll-y-contain p-4 pb-16"
           key={`${scope}${focusedBookTab?.id}`}
+          style={{ WebkitOverflowScrolling: 'touch' }}
         >
           {/* Page View */}
           <div>

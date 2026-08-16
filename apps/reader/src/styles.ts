@@ -58,13 +58,44 @@ enum Style {
 export function updateCustomStyle(
   contents: Contents | undefined,
   settings: Settings | undefined,
+  textColor?: string,
 ) {
   if (!contents || !settings) return
 
-  const { zoom, ...other } = settings
-  let css = `a, article, cite, div, li, p, pre, span, table, body {
-    ${mapToCss(other)}
-  }`
+  const {
+    fontSize,
+    fontWeight,
+    fontFamily,
+    lineHeight,
+    zoom,
+  } = settings
+
+  const typographyCss: CSSProperties = {}
+  if (fontSize) typographyCss.fontSize = fontSize
+  if (fontWeight) typographyCss.fontWeight = fontWeight
+  if (fontFamily) typographyCss.fontFamily = fontFamily
+  if (lineHeight) typographyCss.lineHeight = lineHeight
+
+  const resolvedTextColor = textColor ?? settings.theme?.textColor
+
+  let css = `a, article, cite, div, li, p, pre, span, table, body,
+h1, h2, h3, h4, h5, h6,
+header, footer, section, nav, aside,
+blockquote, figure, figcaption,
+th, td, dt, dd, strong, b, em, i, u, s {
+  ${mapToCss(typographyCss)}
+}`
+
+  if (resolvedTextColor) {
+    css += `\nbody, p, div, span, li, article, section, aside,
+h1, h2, h3, h4, h5, h6,
+h1 *, h2 *, h3 *, h4 *, h5 *, h6 *,
+header, header *, footer, footer *,
+blockquote, figcaption, th, td, dt, dd,
+strong, b, em, i, u, s {
+  color: ${resolvedTextColor} !important;
+}`
+  }
 
   if (zoom) {
     const body = contents.content as HTMLBodyElement
