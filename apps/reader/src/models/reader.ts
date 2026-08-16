@@ -513,7 +513,7 @@ export class BookTab extends BaseTab {
   }
 
   private _el?: HTMLDivElement
-  onRender?: () => void
+  onRender?: (contents?: any) => void
   async render(el: HTMLDivElement, width?: number, height?: number) {
     if (el === this._el && this.rendition) return
     this._el = ref(el)
@@ -560,9 +560,14 @@ export class BookTab extends BaseTab {
       this.location?.start.cfi ?? this.book.cfi ?? undefined,
     )
     this.rendition.themes.default(defaultStyle)
+    this.rendition.hooks.content.register((contents: any) => {
+      this.onRender?.(contents)
+    })
     this.rendition.hooks.render.register((view: any) => {
-      console.log('hooks.render', view)
-      this.onRender?.()
+      this.onRender?.(view?.contents)
+    })
+    this.rendition.on('rendered', (_section: any, view: any) => {
+      this.onRender?.(view?.contents)
     })
 
     this.rendition.on('relocated', (loc: Location) => {

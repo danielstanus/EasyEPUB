@@ -28,6 +28,7 @@ import {
 } from '../hooks'
 import type { Action } from '../hooks'
 import { reader, useReaderSnapshot } from '../models'
+import { isNativePlatform } from '../platform'
 import { navbarState, useZenMode } from '../state'
 import { activeClass } from '../styles'
 
@@ -178,12 +179,14 @@ function ViewActionBar({ className, env }: EnvActionBarProps) {
             />
           )
         })}
-      <Action
-        title={t('zen.title')}
-        Icon={MdSelfImprovement}
-        active={isZenMode}
-        onClick={toggleZenMode}
-      />
+      {!isNativePlatform() && (
+        <Action
+          title={t('zen.title')}
+          Icon={MdSelfImprovement}
+          active={isZenMode}
+          onClick={toggleZenMode}
+        />
+      )}
     </ActionBar>
   )
 }

@@ -9,6 +9,10 @@ import {
   fullSyncFromGDrive,
   fullSyncToGDrive,
   getGoogleAuthUrl,
+  isNativeGoogleSignedIn,
+  isNativePlatform,
+  signInWithGoogleNative,
+  signOutNativeGoogle,
 } from '@flow/reader/gdrive'
 import {
   ColorScheme,
@@ -170,9 +174,14 @@ export const Settings: React.FC = () => {
 
 const Synchronization: React.FC = () => {
   const [provider, setProvider] = useState<'gdrive' | 'dropbox'>('gdrive')
+  const native = isNativePlatform()
+  const [nativeSignedIn, setNativeSignedIn] = useState(() =>
+    isNativeGoogleSignedIn(),
+  )
   const cookies = parseCookies()
   const tokenKey = mapToToken[provider] ?? ''
   const refreshToken = cookies[tokenKey]
+  const authorized = native ? nativeSignedIn : !!refreshToken
   const render = useForceRender()
   const t = useTranslation('settings.synchronization')
 
@@ -278,10 +287,17 @@ const Synchronization: React.FC = () => {
         </div>
 
         <div className="flex gap-2 sm:pb-0.5">
-          {refreshToken ? (
+          {authorized ? (
             <button
               className="rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
-              onClick={() => { destroyCookie(null, tokenKey); render() }}
+              onClick={() => {
+                if (native) {
+                  signOutNativeGoogle().then(() => setNativeSignedIn(false))
+                } else {
+                  destroyCookie(null, tokenKey)
+                  render()
+                }
+              }}
             >
               {t('unauthorize')}
             </button>
@@ -290,12 +306,31 @@ const Synchronization: React.FC = () => {
               className="bg-primary text-on-primary w-full rounded-full px-6 py-2.5 font-medium shadow-sm transition-all hover:shadow-md sm:w-auto"
               onClick={() => {
                 if (provider === 'gdrive') {
-                  const redirectUri = window.location.origin + '/api/callback/gdrive'
-                  window.open(getGoogleAuthUrl(redirectUri), '_blank')
+                  if (native) {
+                    signInWithGoogleNative()
+                      .then(() => setNativeSignedIn(true))
+                      .catch((e) => {
+                        console.error(e)
+                        alert(
+                          'Error al iniciar sesión en Google: ' +
+                            (e?.message || e),
+                        )
+                      })
+                  } else {
+                    const redirectUri =
+                      window.location.origin + '/api/callback/gdrive'
+                    window.open(getGoogleAuthUrl(redirectUri), '_blank')
+                  }
                 } else {
-                  const redirectUri = window.location.origin + '/api/callback/dropbox'
+                  const redirectUri =
+                    window.location.origin + '/api/callback/dropbox'
                   dbx.auth
-                    .getAuthenticationUrl(redirectUri, JSON.stringify({ redirectUri }), 'code', 'offline')
+                    .getAuthenticationUrl(
+                      redirectUri,
+                      JSON.stringify({ redirectUri }),
+                      'code',
+                      'offline',
+                    )
                     .then((url) => window.open(url as string, '_blank'))
                 }
               }}
@@ -307,7 +342,7 @@ const Synchronization: React.FC = () => {
       </div>
 
       {/* GDrive sync actions — only shown when authorized */}
-      {refreshToken && provider === 'gdrive' && (
+      {authorized && provider === 'gdrive' && (
         <div className="mt-5 space-y-4">
           {/* Upload */}
           <div className="rounded-xl border border-gray-200 p-4 dark:border-gray-700">

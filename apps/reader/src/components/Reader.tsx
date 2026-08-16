@@ -25,7 +25,7 @@ import {
 } from '../hooks'
 import { BookTab, reader, useReaderSnapshot } from '../models'
 import { isTouchScreen } from '../platform'
-import { injectFonts, updateCustomStyle } from '../styles'
+import { forceColors, injectFonts, updateCustomStyle } from '../styles'
 
 import {
   getClickedAnnotation,
@@ -293,89 +293,43 @@ function BookPane({ tab, onMouseDown, active }: BookPaneProps) {
   const setNavbar = useSetRecoilState(navbarState)
   const mobile = useMobile()
 
-  const applyCustomStyle = useCallback(() => {
-    const contents = rendition?.getContents()[0]
-    injectFonts(contents)
-    updateCustomStyle(contents, typography, textColor)
+  const applyCustomStyle = useCallback(
+    (targetContents?: any) => {
+      const allContents = targetContents
+        ? [targetContents]
+        : rendition?.getContents() || []
 
-    // Smart Color Inversion for Dark Mode
-    if (contents) {
-      const doc = contents.document
-      // Iterate every element instead of a hard-coded tag list: real books
-      // style titles and body text with tags like strong, em, b, td, th,
-      // code, pre, caption… which were left black and unreadable on dark
-      // themes before.
-      const elements = doc.querySelectorAll('*')
+      if (!allContents.length) return
 
-      if (dark) {
-        // Dark mode: lift dark text to a light gray / active text color and dim light
-        // backgrounds so nothing becomes invisible on a dark theme.
-        const themeColor = textColor || '#bfc8ca'
-        const themeBackground = '#374151' // gray-700 for light boxes
+      const themeColor = textColor || '#bfc8ca'
+      const themeBackground = '#374151' // gray-700 for light boxes
 
-        // WCAG relative luminance — catches near-black titles that a naive
-        // per-channel threshold (e.g. < 100) would miss.
-        const luminance = (r: number, g: number, b: number) => {
-          const lin = (v: number) => {
-            const s = v / 255
-            return s <= 0.03928
-              ? s / 12.92
-              : Math.pow((s + 0.055) / 1.055, 2.4)
+      allContents.forEach((contents: any) => {
+        if (!contents) return
+        injectFonts(contents)
+        // updateCustomStyle injects the universal `*` CSS override when textColor is set
+        updateCustomStyle(contents, typography, dark ? themeColor : undefined)
+
+        // JS-level fallback: directly set inline styles on elements that have
+        // explicit inline color attributes that beat our stylesheet rules
+        if (contents.document) {
+          if (dark) {
+            forceColors(contents.document, themeColor, themeBackground)
+          } else {
+            // Light mode: strip any inline overrides we applied
+            const elements =
+              contents.document.querySelectorAll<HTMLElement>('*')
+            elements.forEach((el) => {
+              el.style.removeProperty('color')
+              el.style.removeProperty('background-color')
+              el.style.removeProperty('fill')
+            })
           }
-          return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
         }
-        const isDarkText = (r: number, g: number, b: number) => {
-          // Keep colored accents (links, highlights) intact: only lift colors
-          // that are dark AND low-saturation.
-          const max = Math.max(r, g, b)
-          const min = Math.min(r, g, b)
-          const saturation = max === 0 ? 0 : (max - min) / max
-          return luminance(r, g, b) < 0.25 && saturation < 0.35
-        }
-
-        elements.forEach((el: Element) => {
-          const htmlEl = el as HTMLElement
-          // Compute against the iframe document's window, not the parent's
-          const computedStyle = doc.defaultView?.getComputedStyle(htmlEl)
-          if (!computedStyle) return
-
-          const color = computedStyle.color
-
-          // Parse RGB
-          const rgb = color.match(/\d+/g)
-          if (rgb && rgb.length >= 3) {
-            const [r, g, b] = rgb.map(Number)
-
-            if (isDarkText(r, g, b)) {
-              htmlEl.style.setProperty('color', themeColor, 'important')
-            }
-          }
-
-          const backgroundColor = computedStyle.backgroundColor
-          const bgRgb = backgroundColor.match(/\d+/g)
-          if (bgRgb && bgRgb.length >= 3) {
-            const [r, g, b] = bgRgb.map(Number)
-            // If background is light (close to white), make it dark gray
-            // This fixes "white boxes" in dark mode while keeping the box visible
-            if (r > 200 && g > 200 && b > 200) {
-              htmlEl.style.setProperty(
-                'background-color',
-                themeBackground,
-                'important',
-              )
-            }
-          }
-        })
-      } else {
-        // Light mode: clear any forced color styles to restore original book colors
-        elements.forEach((el: Element) => {
-          const htmlEl = el as HTMLElement
-          htmlEl.style.removeProperty('color')
-          htmlEl.style.removeProperty('background-color')
-        })
-      }
-    }
-  }, [rendition, typography, dark, textColor])
+      })
+    },
+    [rendition, typography, dark, textColor],
+  )
 
   useEffect(() => {
     tab.onRender = applyCustomStyle
@@ -401,14 +355,24 @@ function BookPane({ tab, onMouseDown, active }: BookPaneProps) {
     setTimeout(() => centerContent(), 200)
   }, [typography.spread, rendition, centerContent])
 
-  // Apply centering and custom style when page turns (rendered changes)
+  // Apply centering and custom style on navigation / page changes
   useEffect(() => {
-    if (rendered) {
-      console.log('Page rendered, applying centering and style')
+    if (!rendition) return
+    const handleUpdate = () => {
       applyCustomStyle()
       setTimeout(() => centerContent(), 100)
     }
-  }, [rendered, centerContent, applyCustomStyle])
+
+    rendition.on('rendered', handleUpdate)
+    rendition.on('relocated', handleUpdate)
+    rendition.on('displayed', handleUpdate)
+
+    return () => {
+      rendition.off('rendered', handleUpdate)
+      rendition.off('relocated', handleUpdate)
+      rendition.off('displayed', handleUpdate)
+    }
+  }, [rendition, centerContent, applyCustomStyle])
 
   useEffect(() => applyCustomStyle(), [applyCustomStyle])
 
