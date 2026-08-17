@@ -318,7 +318,9 @@ function BookPane({ tab, onMouseDown, active }: BookPaneProps) {
           } else {
             // Light mode: strip any inline overrides we applied
             const elements =
-              contents.document.querySelectorAll<HTMLElement>('*')
+              (contents.document as Document).querySelectorAll<HTMLElement>(
+                '*',
+              )
             elements.forEach((el) => {
               el.style.removeProperty('color')
               el.style.removeProperty('background-color')
