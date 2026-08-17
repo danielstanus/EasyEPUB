@@ -117,8 +117,12 @@ th, td, dt, dd, strong, b, em, i, u, s {
   if (resolvedTextColor) {
     // Universal catch-all: every element gets the theme text color.
     // Exclude anchors (handled separately with blue link colour).
+    // `-webkit-text-fill-color` is included because many books set it on
+    // headings (e.g. `.calibre3 { -webkit-text-fill-color: #000 }`) and, when
+    // present, it wins over `color` in Chromium/WebKit.
     const darkCss = `*:not(a):not(a *) {
   color: ${resolvedTextColor} !important;
+  -webkit-text-fill-color: ${resolvedTextColor} !important;
 }
 svg text, svg text *, svg tspan {
   fill: ${resolvedTextColor} !important;
@@ -150,6 +154,45 @@ function isHeadingLink(el: HTMLElement): boolean {
   return siblingText.trim().length === 0
 }
 
+/** Parse an `rgb(r, g, b)` / `#rrggbb` color into a comparable tuple. */
+function parseRgb(color: string): [number, number, number] | null {
+  if (color.startsWith('#')) {
+    const hex = color.slice(1)
+    const full =
+      hex.length === 3
+        ? hex
+            .split('')
+            .map((c) => c + c)
+            .join('')
+        : hex
+    const n = parseInt(full, 16)
+    if (Number.isNaN(n) || full.length !== 6) return null
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+  }
+  const m = color.match(/\d+(\.\d+)?/g)
+  if (!m || m.length < 3) return null
+  return [Number(m[0]), Number(m[1]), Number(m[2])]
+}
+
+/** Whether an element carries its own visible text (not just child elements). */
+function hasDirectText(el: HTMLElement): boolean {
+  return Array.from(el.childNodes).some(
+    (n) =>
+      n.nodeType === Node.TEXT_NODE && (n.textContent ?? '').trim().length > 0,
+  )
+}
+
+/**
+ * Set the text color on an element, overriding both `color` and
+ * `-webkit-text-fill-color`. The latter is what Chromium/WebKit actually paint
+ * with when a book defines it (e.g. `.calibre3 { -webkit-text-fill-color: #000 }`),
+ * so setting `color` alone leaves such titles black in dark mode.
+ */
+function setTextColor(el: HTMLElement, color: string) {
+  el.style.setProperty('color', color, 'important')
+  el.style.setProperty('-webkit-text-fill-color', color, 'important')
+}
+
 /**
  * Force colors directly via inline styles on every element in the document.
  * Called as a JS-level fallback after stylesheet injection, because some EPUBs
@@ -161,19 +204,44 @@ export function forceColors(
   backgroundTheme: string,
 ) {
   if (!doc) return
+
+  // Anchors that act as headings/titles (e.g. TOC entries) must follow the
+  // theme text color, together with everything inside them. Regular inline
+  // links keep their blue color, and so do their descendants (they are part
+  // of the link).
+  const headingLinks = new Set<HTMLElement>()
+  doc.querySelectorAll<HTMLElement>('a').forEach((a) => {
+    if (isHeadingLink(a)) headingLinks.add(a)
+  })
+
+  const themeRgb = parseRgb(textColor)
+
   const elements = doc.querySelectorAll<HTMLElement>('*')
   elements.forEach((el) => {
     const tag = el.tagName
-    // Inline links keep their blue color, but anchors that are actually
-    // headings/titles (e.g. TOC entries) must follow the theme text color.
-    const headingLink = tag === 'A' && isHeadingLink(el)
-    if (tag === 'A' && !headingLink) return
 
-    // Always force color on headings and elements that commonly have inline color
+    // Skip regular inline links and their contents so they keep their blue.
+    const nearestLink = el.closest('a')
+    if (nearestLink && !headingLinks.has(nearestLink)) return
+
     const isHeading =
-      headingLink || /^H[1-6]$/.test(tag) || tag === 'HEADER' || tag === 'TITLE'
-    if (isHeading || el.style.color) {
-      el.style.setProperty('color', textColor, 'important')
+      headingLinks.has(el) ||
+      /^H[1-6]$/.test(tag) ||
+      tag === 'HEADER' ||
+      tag === 'TITLE'
+
+    // Force the theme color on headings, elements with their own inline
+    // color, descendants of heading links, and any visible text whose
+    // computed color still differs from the theme (e.g. book rules with
+    // `!important` that beat the universal stylesheet).
+    const computed = getComputedStyle(el)
+    const computedDiffers =
+      hasDirectText(el) &&
+      themeRgb !== null &&
+      (parseRgb(computed.color)?.join(',') !== themeRgb.join(',') ||
+        parseRgb(computed.webkitTextFillColor)?.join(',') !== themeRgb.join(','))
+    if (isHeading || el.style.color || computedDiffers) {
+      setTextColor(el, textColor)
     }
 
     // SVG text nodes
@@ -184,7 +252,7 @@ export function forceColors(
 
     // FONT elements with color attribute
     if (tag === 'FONT' && el.getAttribute('color')) {
-      el.style.setProperty('color', textColor, 'important')
+      setTextColor(el, textColor)
     }
 
     // Dim white/near-white backgrounds

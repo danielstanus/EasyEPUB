@@ -323,6 +323,7 @@ function BookPane({ tab, onMouseDown, active }: BookPaneProps) {
               )
             elements.forEach((el) => {
               el.style.removeProperty('color')
+              el.style.removeProperty('-webkit-text-fill-color')
               el.style.removeProperty('background-color')
               el.style.removeProperty('fill')
             })

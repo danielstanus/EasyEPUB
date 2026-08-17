@@ -51,12 +51,35 @@ export const ThemeView: React.FC<PaneViewProps> = () => {
   }
 
   const pickBackground = (value: string) => {
-    setScheme(isDarkColor(value) ? 'dark' : 'light')
-    updateTheme({ preset: undefined, backgroundColor: value })
+    const dark = isDarkColor(value)
+    // Pair the background with a readable text color: keep the current text
+    // color only when it still contrasts with the new background, otherwise
+    // fall back to a default. This prevents e.g. picking a light background
+    // right after a dark preset from leaving light text on a light background.
+    const currentText = theme?.textColor ?? '#1a1a1a'
+    const textColor =
+      isDarkColor(currentText) === dark
+        ? dark
+          ? '#e8e8e8'
+          : '#1a1a1a'
+        : currentText
+    setScheme(dark ? 'dark' : 'light')
+    updateTheme({ preset: undefined, backgroundColor: value, textColor })
   }
 
   const pickTextColor = (value: string) => {
-    updateTheme({ preset: undefined, textColor: value })
+    const dark = isDarkColor(value)
+    // Mirror the background case: keep the current background when it
+    // contrasts with the chosen text, otherwise pair it with a readable one.
+    const currentBg = theme?.backgroundColor ?? '#ffffff'
+    const backgroundColor =
+      isDarkColor(currentBg) === dark
+        ? dark
+          ? '#ffffff'
+          : '#000000'
+        : currentBg
+    setScheme(isDarkColor(backgroundColor) ? 'dark' : 'light')
+    updateTheme({ preset: undefined, backgroundColor, textColor: value })
   }
 
   return (
