@@ -131,6 +131,26 @@ svg text, svg text *, svg tspan {
 }
 
 /**
+ * Detect anchors that are rendered as headings/titles rather than inline body
+ * links (e.g. TOC entries such as `<a class="calibre3">...<br>...</a>`). These
+ * must follow the theme text color in dark mode instead of the link blue.
+ */
+function isHeadingLink(el: HTMLElement): boolean {
+  // Multi-line title links often contain a <br>.
+  if (el.querySelector('br')) return true
+
+  // A standalone link that is the only meaningful content of its parent
+  // (typical TOC list item) reads as a heading, not an inline link.
+  const parent = el.parentElement
+  if (!parent) return false
+  const siblingText = Array.from(parent.childNodes)
+    .filter((node) => node !== el)
+    .map((node) => node.textContent ?? '')
+    .join('')
+  return siblingText.trim().length === 0
+}
+
+/**
  * Force colors directly via inline styles on every element in the document.
  * Called as a JS-level fallback after stylesheet injection, because some EPUBs
  * have inline `style` attributes on heading elements that beat our CSS rules.
@@ -144,11 +164,14 @@ export function forceColors(
   const elements = doc.querySelectorAll<HTMLElement>('*')
   elements.forEach((el) => {
     const tag = el.tagName
-    // Skip anchors so links keep their blue color
-    if (tag === 'A') return
+    // Inline links keep their blue color, but anchors that are actually
+    // headings/titles (e.g. TOC entries) must follow the theme text color.
+    const headingLink = tag === 'A' && isHeadingLink(el)
+    if (tag === 'A' && !headingLink) return
 
     // Always force color on headings and elements that commonly have inline color
-    const isHeading = /^H[1-6]$/.test(tag) || tag === 'HEADER' || tag === 'TITLE'
+    const isHeading =
+      headingLink || /^H[1-6]$/.test(tag) || tag === 'HEADER' || tag === 'TITLE'
     if (isHeading || el.style.color) {
       el.style.setProperty('color', textColor, 'important')
     }
